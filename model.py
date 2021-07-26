@@ -90,18 +90,6 @@ def training_step(loss, optimizer_handle, lr, **kwargs):
     :param momentum: Optionally, you can also pass a momentum term to the optimiser. 
     :return: The training operation
     '''
-    
-    if config.exponential_decay:
-        global_step = tf.train.get_or_create_global_step()
-        num_epochs_before_decay = int(config.max_epochs/3)
-        num_steps_per_epoch = 1500/config.batch_size 
-        decay_steps = int(num_epochs_before_decay * num_steps_per_epoch)
-        lr = tf.train.exponential_decay(learning_rate = config.learning_rate,
-                                        global_step = global_step,
-                                        decay_steps = decay_steps,
-                                        decay_rate = 1e-1,
-                                        staircase = True)
-    
     if 'momentum' in kwargs:
         momentum = kwargs.get('momentum')
         optimizer = optimizer_handle(learning_rate=lr, momentum=momentum)
