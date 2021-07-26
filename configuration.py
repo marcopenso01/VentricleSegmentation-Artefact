@@ -23,13 +23,6 @@ weight_init = 'he_normal'    # xavier_uniform/ xavier_normal/ he_normal /he_unif
 model_handle = model_structure.Dunet2D_same_mod2
 #model_handle = model_structure.Dunet2D_same_mod3
 
-# Model settings Enet
-# iniz = tf.contrib.layers.xavier_initializer(uniform=True)  #xavier_uniform
-# iniz = tf.contrib.layers.xavier_initializer(uniform=False)  #xavier_normal
-iniz = tf.contrib.layers.variance_scaling_initializer(uniform=False)  #he_normal
-# iniz = tf.contrib.layers.variance_scaling_initializer(uniform=True)  #he_uniform
-skip_connections = True
-
 # Data settings
 data_mode = '2D' 
 image_size = (176, 176)   #(212,212)
@@ -44,15 +37,13 @@ z_dim = 8
 
 # Training settings
 batch_size = 4      #4 
-learning_rate = 0.01   #unet: 0.01    enet: 0.0005
-exponential_decay = False     #True Enet
+learning_rate = 0.0001   #unet: 0.01    enet: 0.0005
 optimizer_handle = tf.compat.v1.train.AdamOptimizer     #(beta1 = 0.9, beta2 = 0.999, epsilon=1e-08)
 schedule_lr = False    #decrease 10 times the LR when loss gradient lower than threshold
-warmup_training = True
 weight_decay = 0  # enet:2e-4    #unet: 0.00000
 momentum = None
 # loss can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/'crossentropy_and_dice (alfa,beta)'
-loss_type = 'weighted_crossentropy'
+loss_type = 'crossentropy_and_dice'
 alfa = 1     #1      
 beta = 0.2   #1      
 augment_batch = True
@@ -100,7 +91,6 @@ standardize = False
 normalize = True
 
 # Rarely changed settings
-use_data_fraction = False  # Should normally be False
 max_epochs = 3000
 schedule_gradient_threshold = 0.00001  # When the gradient of the learning curve is smaller than this value the LR will
                                        # be reduced
