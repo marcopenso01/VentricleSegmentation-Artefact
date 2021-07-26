@@ -27,7 +27,14 @@ import augmentation as aug
 from background_generator import BackgroundGenerator
 import model_structure as model_structure
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+# Set SGE_GPU environment
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# The GPU id to use, usually either "0" or "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+
+logging.basicConfig(
+    level=logging.INFO # allow DEBUG level messages to pass through the logger
+    )
 
 log_dir = os.path.join(config.log_root, config.experiment_name)
 
@@ -64,54 +71,25 @@ def run_training(continue_run):
     )
     
     # the following are HDF5 datasets, not numpy arrays
-    images_train = data['images_train']
-    labels_train = data['masks_train']
+    images_train = data['images_train'][()]
+    labels_train = data['masks_train'][()]
 
     if not train_on_all_data:
         images_val = data['images_val']
         labels_val = data['masks_val']
         
-
-    if config.use_data_fraction:
-        num_images = images_train.shape[0]
-        new_last_index = int(float(num_images)*config.use_data_fraction)
-
-        logging.warning('USING ONLY FRACTION OF DATA!')
-        logging.warning(' - Number of imgs orig: %d, Number of imgs new: %d' % (num_images, new_last_index))
-        images_train = images_train[0:new_last_index,...]
-        labels_train = labels_train[0:new_last_index,...]
-
     logging.info('Data summary:')
-    logging.info(' - Images:')
+    logging.info(' - Training Images:')
     logging.info(images_train.shape)
     logging.info(images_train.dtype)
-    logging.info(' - Labels:')
+    logging.info(' - Training Labels:')
     logging.info(labels_train.shape)
     logging.info(labels_train.dtype)
+    if not train_on_all_data:
+        logging.info(' - Validation Images:')
+        logging.info(images_val.shape)
+        logging.info(images_val.dtype)
     
-   
-    
- #   if config.prob:   #if prob is not 0
- #       logging.info('Before data_augmentation the number of training images is:')
- #       logging.info(images_train.shape[0])
- #       #augmentation
- #       image_aug, label_aug = aug.augmentation_function(images_train,labels_train)
-    
-        #num_aug = image_aug.shape[0]
-        # id images augmented will be b'0.0'
-        #id_aug = np.zeros([num_aug,]).astype('|S9')
-        #concatenate
-        #id_train = np.concatenate((id__train,id_aug))
- #       images_train = np.concatenate((images_train,image_aug))
- #       labels_train = np.concatenate((labels_train,label_aug))
-    
- #       logging.info('After data_augmentation the number of training images is:')
- #       logging.info(images_train.shape[0])
- #   else:
- #       logging.info('No data_augmentation. Number of training images is:')
- #       logging.info(images_train.shape[0])
-
-
     # Tell TensorFlow that the model will be built into the default Graph.
 
     with tf.Graph().as_default():
@@ -132,16 +110,6 @@ def run_training(continue_run):
         # Build a Graph that computes predictions from the inference model.
         if (config.experiment_name == 'unet2D_valid' or config.experiment_name == 'unet2D_same' or config.experiment_name == 'unet2D_same_mod' or config.experiment_name == 'unet2D_light' or config.experiment_name == 'Dunet2D_same_mod' or config.experiment_name == 'Dunet2D_same_mod2' or config.experiment_name == 'Dunet2D_same_mod3'):
             logits = model.inference(images_pl, config, training=training_pl)
-        elif config.experiment_name == 'ENet':
-            with slim.arg_scope(model_structure.ENet_arg_scope(weight_decay=2e-4)):
-                logits = model_structure.ENet(images_pl,
-                                              num_classes=config.nlabels,
-                                              batch_size=config.batch_size,
-                                              is_training=True,
-                                              reuse=None,
-                                              num_initial_blocks=1,
-                                              stage_two_repeat=2,
-                                              skip_connections=config.skip_connections)
         else:
             logging.warning('invalid experiment_name!')    
         
@@ -157,6 +125,7 @@ def run_training(continue_run):
                                              nlabels=config.nlabels,
                                              loss_type=config.loss_type,
                                              weight_decay=config.weight_decay)  # second output is unregularised loss
+              
         
         # record how Total loss and weight decay change over time
         tf.summary.scalar('loss', loss)  
@@ -233,9 +202,10 @@ def run_training(continue_run):
         no_improvement_counter = 0
         best_val = np.inf
         last_train = np.inf
-        loss_history = []
-        loss_gradient = np.inf
         best_dice = 0
+        train_loss_history = []
+        val_loss_history = []
+        lr_history = []
 
         for epoch in range(config.max_epochs):
 
@@ -246,12 +216,6 @@ def run_training(continue_run):
                                              labels_train,
                                              batch_size=config.batch_size,
                                              augment_batch=config.augment_batch):
-
-                if config.warmup_training:
-                    if step < 50:
-                        curr_lr = config.learning_rate / 10.0
-                    elif step == 50:
-                        curr_lr = config.learning_rate
 
                 start_time = time.time()
 
@@ -302,23 +266,12 @@ def run_training(continue_run):
                                                  )
                     summary_writer.add_summary(train_summary_msg, step)
 
-                    loss_history.append(train_loss)
-                    if len(loss_history) > 5:
-                        loss_history.pop(0)
-                        loss_gradient = (loss_history[-5] - loss_history[-1]) / 2
-
-                    logging.info('loss gradient is currently %f' % loss_gradient)
-
-                    if config.schedule_lr and loss_gradient < config.schedule_gradient_threshold:
-                        logging.warning('Reducing learning rate!')
-                        curr_lr /= 10.0
-                        logging.info('Learning rate changed to: %f' % curr_lr)
-
-                        # reset loss history to give the optimisation some time to start decreasing again
-                        loss_gradient = np.inf
-                        loss_history = []
-
-                    if train_loss <= last_train:  # best_train:
+                    train_loss_history.append(train_loss)
+                    
+                    curr_lr = config.learning_rate * train_loss
+                    logging.info('Learning rate change to: %f' % curr_lr)
+                    
+                    if train_loss < last_train:  # best_train found:
                         no_improvement_counter = 0
                         logging.info('Decrease in training error!')
                     else:
@@ -331,6 +284,9 @@ def run_training(continue_run):
                 if (step + 1) % config.val_eval_frequency == 0:
 
                     checkpoint_file = os.path.join(log_dir, 'model.ckpt')
+                    filelist = glob.glob(os.path.join(log_dir, 'model.ckpt*'))
+                    for file in filelist:
+                        os.remove(file)
                     saver.save(sess, checkpoint_file, global_step=step)
                     # Evaluate against the training set.
 
@@ -346,7 +302,8 @@ def run_training(continue_run):
                                                        images_val,
                                                        labels_val,
                                                        config.batch_size)
-
+                        
+                        val_loss_history.append(val_loss)
                         val_summary_msg = sess.run(val_summary, feed_dict={val_error_: val_loss, val_dice_: val_dice}
                         )
                         summary_writer.add_summary(val_summary_msg, step)
@@ -362,19 +319,17 @@ def run_training(continue_run):
 
                         if val_loss < best_val:
                             best_val = val_loss
-                            best_file = os.path.join(log_dir, 'model_best_xent.ckpt')
-                            filelist = glob.glob(os.path.join(log_dir, 'model_best_xent*'))
+                            best_file = os.path.join(log_dir, 'model_best_loss.ckpt')
+                            filelist = glob.glob(os.path.join(log_dir, 'model_best_loss*'))
                             for file in filelist:
                                 os.remove(file)
-                            saver_best_xent.save(sess, best_file, global_step=step)
-                            logging.info('Found new best crossentropy on validation set! - %f -  Saving model_best_xent.ckpt' % val_loss)
+                            saver_best_loss.save(sess, best_file, global_step=step)
+                            logging.info('Found new best crossentropy on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
 
                 step += 1
                 
             # end epoch
-            if (epoch + 1) % config.epoch_freq == 0:
-                curr_lr = curr_lr *0.98
-            logging.info('Learning rate: %f' % curr_lr)
+ 
         sess.close()
     data.close()
 
