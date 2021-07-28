@@ -31,7 +31,8 @@ optimizer_handle = tf.compat.v1.train.AdamOptimizer     #(beta1 = 0.9, beta2 = 0
 schedule_lr = False    #decrease 10 times the LR when loss gradient lower than threshold
 weight_decay = 0  # enet:2e-4    #unet: 0.00000
 momentum = None
-# loss can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/'crossentropy_and_dice (alfa,beta)'
+# loss can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/
+# 'crossentropy_and_dice (alfa,beta)'/'tversky'/'focal_tversky'
 loss_type = 'crossentropy_and_dice'
 alfa = 1     #1      
 beta = 0.2   #1      
