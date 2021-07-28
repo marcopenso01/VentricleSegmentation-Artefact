@@ -27,10 +27,6 @@ import augmentation as aug
 from background_generator import BackgroundGenerator
 import model_structure as model_structure
 
-# Set SGE_GPU environment
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# The GPU id to use, usually either "0" or "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 
 logging.basicConfig(
     level=logging.INFO # allow DEBUG level messages to pass through the logger
@@ -108,10 +104,7 @@ def run_training(continue_run):
         tf.summary.scalar('learning_rate', learning_rate_pl)
 
         # Build a Graph that computes predictions from the inference model.
-        if (config.experiment_name == 'unet2D_valid' or config.experiment_name == 'unet2D_same' or config.experiment_name == 'unet2D_same_mod' or config.experiment_name == 'unet2D_light' or config.experiment_name == 'Dunet2D_same_mod' or config.experiment_name == 'Dunet2D_same_mod2' or config.experiment_name == 'Dunet2D_same_mod3'):
-            logits = model.inference(images_pl, config, training=training_pl)
-        else:
-            logging.warning('invalid experiment_name!')    
+        logits = model.inference(images_pl, config, training=training_pl) 
         
         logging.info('images_pl shape')
         logging.info(images_pl.shape)
@@ -205,12 +198,16 @@ def run_training(continue_run):
         best_dice = 0
         train_loss_history = []
         val_loss_history = []
+        train_dice_history = []
+        val_dice_history = []
         lr_history = []
 
         for epoch in range(config.max_epochs):
 
             logging.info('EPOCH %d' % epoch)
-
+            
+            train_temp = []
+            val_temp = []
 
             for batch in iterate_minibatches(images_train,
                                              labels_train,
@@ -266,7 +263,7 @@ def run_training(continue_run):
                                                  )
                     summary_writer.add_summary(train_summary_msg, step)
 
-                    train_loss_history.append(train_loss)
+                    train_temp.append([train_loss, train_dice])
                     
                     curr_lr = config.learning_rate * train_loss
                     logging.info('Learning rate change to: %f' % curr_lr)
@@ -303,7 +300,7 @@ def run_training(continue_run):
                                                        labels_val,
                                                        config.batch_size)
                         
-                        val_loss_history.append(val_loss)
+                        val_temp.append([val_loss, val_dice])
                         val_summary_msg = sess.run(val_summary, feed_dict={val_error_: val_loss, val_dice_: val_dice}
                         )
                         summary_writer.add_summary(val_summary_msg, step)
@@ -324,13 +321,53 @@ def run_training(continue_run):
                             for file in filelist:
                                 os.remove(file)
                             saver_best_loss.save(sess, best_file, global_step=step)
-                            logging.info('Found new best crossentropy on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
+                            logging.info('Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
 
                 step += 1
                 
             # end epoch
- 
+            lr_history.append(curr_lr)
+            sum_dice = 0
+            sum_loss = 0
+            for i in range(len(train_temp)):
+                sum_loss += train_temp[i][0]
+                sum_dice += train_temp[i][1]
+            train_loss_history.append(sum_loss/len(train_temp))
+            train_dice_history.append(sum_dice/len(train_temp))
+            sum_dice = 0
+            sum_loss = 0
+            for i in range(len(val_temp)):
+                sum_loss += val_temp[i][0]
+                sum_dice += val_temp[i][1]
+            val_loss_history.append(sum_loss/len(val_temp))
+            val_dice_history.append(sum_dice/len(val_temp))
+            
         sess.close()
+        
+        #plot history (loss, dice, lr)
+        plt.figure()
+        plt.plot(train_loss_history, label='train_loss')
+        plt.plot(val_loss_history, label='val_loss')
+        plt.title('model loss')
+        plt.legend()
+        plt.xlabel('epoch')
+        plt.ylabel('loss')
+        plt.show()
+        plt.figure()
+        plt.plot(train_dice_history, label='train_dice')
+        plt.plot(val_dice_history, label='val_dice')
+        plt.title('model dice')
+        plt.legend()
+        plt.xlabel('epoch')
+        plt.ylabel('dice')
+        plt.show()
+        plt.figure()
+        plt.plot(lr_history)
+        plt.title('model learning rate')
+        plt.xlabel('epoch')
+        plt.ylabel('learning rate')
+        plt.show() 
+        
     data.close()
 
 
