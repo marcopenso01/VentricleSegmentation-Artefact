@@ -63,16 +63,6 @@ def predict(images, config):
     '''
     if (config.experiment_name == 'unet2D_valid' or config.experiment_name == 'unet2D_same' or config.experiment_name == 'unet2D_same_mod' or config.experiment_name == 'unet2D_light' or config.experiment_name == 'Dunet2D_same_mod' or config.experiment_name == 'Dunet2D_same_mod2' or config.experiment_name == 'Dunet2D_same_mod3'):
         logits = inference(images, config, training=tf.constant(False, dtype=tf.bool))
-    elif config.experiment_name == 'ENet':
-        with slim.arg_scope(model_structure.ENet_arg_scope(weight_decay=2e-4)):
-            logits = model_structure.ENet(images,
-                                          num_classes=config.nlabels,
-                                          batch_size=1,
-                                          is_training=False,
-                                          reuse=None,
-                                          num_initial_blocks=1,
-                                          stage_two_repeat=2,
-                                          skip_connections=config.skip_connections)
     else:
         logging.warning('invalid experiment_name!') 
     softmax = tf.nn.softmax(logits)
