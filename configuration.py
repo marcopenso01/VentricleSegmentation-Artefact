@@ -4,24 +4,13 @@ import os
 import socket
 import logging
 
-#experiment_name = 'unet2D_valid'
-#experiment_name = 'unet2D_same'
-#experiment_name = 'unet2D_same_mod'
-#experiment_name = 'unet2D_light'
-#experiment_name = 'Dunet2D_same_mod'
-experiment_name = 'Dunet2D_same_mod2'
-#experiment_name = 'Dunet2D_same_mod3'
-#experiment_name = 'ENet'
+experiment_name = 'prova'
 
 # Model settings Unet2D
 weight_init = 'he_normal'    # xavier_uniform/ xavier_normal/ he_normal /he_uniform /caffe_uniform/ simple/ bilinear
-#model_handle = model_structure.unet2D_valid
-#model_handle = model_structure.unet2D_same
 #model_handle = model_structure.unet2D_same_mod
-#model_handle = model_structure.unet2D_light
 #model_handle = model_structure.Dunet2D_same_mod
-model_handle = model_structure.Dunet2D_same_mod2
-#model_handle = model_structure.Dunet2D_same_mod3
+
 
 # Data settings
 data_mode = '2D' 
@@ -91,10 +80,7 @@ standardize = False
 normalize = True
 
 # Rarely changed settings
-max_epochs = 3000
-schedule_gradient_threshold = 0.00001  # When the gradient of the learning curve is smaller than this value the LR will
-                                       # be reduced
+max_epochs = 1000
 
 train_eval_frequency = 200
-val_eval_frequency = 150
-epoch_freq = 5   
+val_eval_frequency = 150 
