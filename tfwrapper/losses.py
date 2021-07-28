@@ -68,6 +68,49 @@ def dice_loss(logits, labels, epsilon=1e-10, only_foreground=False, sum_over_bat
 
     return loss
 
+
+def tversky_loss(logits, labels, epsilon=1e-10, only_foreground=False, sum_over_batches=False):
+    
+    ndims = logits.get_shape().ndims
+
+    prediction = tf.nn.softmax(logits)
+    
+    intersection = tf.multiply(prediction, labels)
+
+    if ndims == 5:
+        reduction_axes = [1,2,3]
+    else:
+        reduction_axes = [1,2]
+
+    if sum_over_batches:
+        reduction_axes = [0] + reduction_axes
+
+    # Reduce the maps over all dimensions except the batch and the label index
+    true_pos = tf.reduce_sum(intersection, axis=reduction_axes)
+    false_neg = tf.reduce_sum(tf.multiply((1 - prediction), labels), axis=reduction_axes)
+    false_pos = tf.reduce_sum(tf.multiply(prediction, (1 - labels)), axis=reduction_axes)  
+    alpha = 0.7
+
+    tversky_index = (true_pos + epsilon) / (true_pos + alpha * false_neg + (1-alpha) * false_pos + epsilon)
+    
+    if only_foreground:
+        if sum_over_batches:
+            loss = 1 - tf.reduce_mean(tversky_index[1:])
+        else:
+            loss = 1 - tf.reduce_mean(tversky_index[:, 1:])
+    else:
+        loss = 1 - tf.reduce_mean(tversky_index)
+
+    return loss
+
+
+def focal_tversky_loss(logits, labels, epsilon=1e-10, only_foreground=False, sum_over_batches=False):
+    
+    val = tversky_loss(logists, labels, only_foreground=True)
+    gamma = 0.75
+    return tf.math.pow(val, gamma)
+    
+    
 def pixel_wise_cross_entropy_loss(logits, labels):
     '''
     Simple wrapper for the normal tensorflow cross entropy loss 
