@@ -133,7 +133,7 @@ def ResUNet(images, training, nlabels):
     #bridge layer, number of filters is double that of the last encoder layer
     b0 = layers.residual_block(e3, 'b0', num_filters=512, strides=[2,1], training=training)
     
-    #dencoder
+    #decoder
     up3 = layers.deconv2D_layer_bn(b0, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
     concat3 = tf.concat([up3, e3], axis=3,  name='concat3')
     d3 = layers.residual_block(concat3, 'd3', num_filters=256, strides=[1,1], training=training)
@@ -151,5 +151,55 @@ def ResUNet(images, training, nlabels):
     return pred
     
     
+def DenseUNet(images, training, nlabels):
     
+    #encoder
+    conv1 = layers.conv2D_layer_bn(images, 'conv1', num_filters=64, training=training)
+    dens1 = layers.dense_block(conv1, 'dens1', num_filters=64, n_layers=4, training=training)
+    pool1 = layers.max_pool_layer2d(dens1)
+    
+    conv2 = layers.conv2D_layer_bn(pool1, 'conv2', num_filters=128, training=training)
+    dens2 = layers.dense_block(conv2, 'dens2', num_filters=128, n_layers=4, training=training)
+    pool2 = layers.max_pool_layer2d(dens2)
+    
+    conv3 = layers.conv2D_layer_bn(pool2, 'conv3', num_filters=256, training=training)
+    dens3 = layers.dense_block(conv3, 'dens3', num_filters=256, n_layers=4, training=training)
+    pool3 = layers.max_pool_layer2d(dens3)
+    
+    conv4 = layers.conv2D_layer_bn(pool3, 'conv4', num_filters=512, training=training)
+    dens4 = layers.dense_block(conv4, 'dens4', num_filters=512, n_layers=4, training=training)
+    pool4 = layers.max_pool_layer2d(dens4)
+    
+    #bridge
+    conv5 = layers.conv2D_layer_bn(pool4, 'conv5', num_filters=1024, training=training)
+    dens5 = layers.dense_block(conv5, 'dens5', num_filters=1024, n_layers=4, training=training)
+    
+    #decoder
+    upconv4 = layers.deconv2D_layer_bn(dens5, name='upconv4', kernel_size=(4, 4), strides=(2, 2), num_filters=512, weight_init='bilinear', training=training)
+    concat4 = tf.concat([upconv4, dens4], axis=3, name='concat4')
+    
+    conv6 = layers.conv2D_layer_bn(concat4, 'conv6', num_filters=512, training=training)
+    dens6 = layers.dense_block(conv6, 'dens6', num_filters=512, n_layers=4, training=training)
+    
+    upconv3 = layers.deconv2D_layer_bn(dens6, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
+    concat3 = tf.concat([upconv3, dens3], axis=3, name='concat3')
+    
+    conv7 = layers.conv2D_layer_bn(concat3, 'conv7', num_filters=256, training=training)
+    dens7 = layers.dense_block(conv7, 'dens7', num_filters=256, n_layers=4, training=training)
+    
+    upconv2 = layers.deconv2D_layer_bn(dens7, name='upconv2', kernel_size=(4, 4), strides=(2, 2), num_filters=128, weight_init='bilinear', training=training)
+    concat2 = tf.concat([upconv2, dens2], axis=3, name='concat2')
+    
+    conv8 = layers.conv2D_layer_bn(concat2, 'conv8', num_filters=128, training=training)
+    dens8 = layers.dense_block(conv8, 'dens8', num_filters=128, n_layers=4, training=training)
+    
+    upconv1 = layers.deconv2D_layer_bn(dens8, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
+    concat1 = tf.concat([upconv1, dens1], axis=3, name='concat1')
+    
+    conv9 = layers.conv2D_layer_bn(concat1, 'conv9', num_filters=64, training=training)
+    dens9 = layers.dense_block(conv9, 'dens9', num_filters=64, n_layers=4, training=training)
+    
+    pred = layers.conv2D_layer_bn(dens9, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
 
+    return pred
+    
