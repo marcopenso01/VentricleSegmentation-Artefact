@@ -181,7 +181,7 @@ def conv2D_layer(bottom,
                  kernel_size=(3,3),
                  num_filters=32,
                  strides=(1,1),
-                 activation=tf.nn.relu,
+                 activation=tf.identity,
                  padding="SAME",
                  weight_init='he_normal',
                  add_bias=True):
@@ -209,7 +209,7 @@ def conv2D_layer(bottom,
             #initialise bias for the filter
             biases = get_bias_variable(bias_shape, name='b')
             op = tf.nn.bias_add(op, biases)
-        # apply a ReLU non-linear activation
+        # apply activation
         op = activation(op)
 
         # Add Tensorboard summaries
@@ -219,7 +219,7 @@ def conv2D_layer(bottom,
     
     
  # dense block
-def res_net_block(bottom,
+def dense_block(bottom,
                   name,
                   training,
                   kernel_size=(3, 3),
@@ -239,13 +239,12 @@ def res_net_block(bottom,
                         weight_init=weight_init,
                         add_bias=False)
 
-    conv_bn = batch_normalisation_layer(conv, name + '_bn', training)
+    conv_bn = batch_normalisation_layer(conv, name+'_bn', training)
 
     x = tf.concat([conv_bn, bottom], axis=-1)
     act = activation(x)
 
     return act
-
 
 
 def conv3D_layer(bottom,
@@ -484,7 +483,7 @@ def conv2D_layer_bn(bottom,
                         weight_init=weight_init,
                         add_bias=False)
 
-    conv_bn = batch_normalisation_layer(conv, name + '_bn', training)
+    conv_bn = batch_normalisation_layer(conv, name+'_bn', training)
 
     act = activation(conv_bn)
 
@@ -618,7 +617,112 @@ def conv2D_dilated_layer_bn(bottom,
     return act
 
 
+def residual_block(bottom,
+                   name,
+                   training,
+                   kernel_size=(3,3),
+                   num_filters=32,
+                   strides=[1,1],
+                   activation=tf.nn.relu,
+                   padding="SAME",
+                   weight_init='he_normal'):
+    
+    x = batch_normalisation_layer(bottom, name+'_bn1', training)
+    
+    x = activation(x)
+    
+    res1 = conv2D_layer(bottom=x,
+                        name=name+'_1',
+                        kernel_size=kernel_size,
+                        num_filters=num_filters,
+                        strides=(strides[0],strides[0]),
+                        activation=tf.identity,
+                        padding=padding,
+                        weight_init=weight_init,
+                        add_bias=True)
+    
+    res1 = batch_normalisation_layer(res1, name+'_bn2', training)
+    
+    res1 = activation(res1)
+    
+    res2 = conv2D_layer(bottom=res1,
+                        name=name+'_2',
+                        kernel_size=kernel_size,
+                        num_filters=num_filters,
+                        strides=(strides[1],strides[1]),
+                        activation=tf.identity,
+                        padding=padding,
+                        weight_init=weight_init,
+                        add_bias=True)
+    
+    shortcut = conv2D_layer(bottom=bottom,
+                            name=name+'_shortcut',
+                            kernel_size=(1,1),
+                            num_filters=num_filters,
+                            strides=(strides[0],strides[0]),
+                            activation=tf.identity,
+                            padding=padding,
+                            weight_init=weight_init,
+                            add_bias=True)
+    
+    shortcut = batch_normalisation_layer(shortcut, name+'_bn3', training)
+    
+    output = tf.add(shortcut, res2)
+    
+    return output
 
+
+def res_block_initial(bottom,
+                      name,
+                      training,
+                      kernel_size=(3,3),
+                      num_filters=32,
+                      strides=[1,1],
+                      activation=tf.nn.relu,
+                      padding="SAME",
+                      weight_init='he_normal'):
+    
+    x = conv2D_layer(bottom=bottom,
+                     name=name+'_1',
+                     kernel_size=kernel_size,
+                     num_filters=num_filters,
+                     strides=(strides[0],strides[0]),
+                     activation=tf.identity,
+                     padding=padding,
+                     weight_init=weight_init,
+                     add_bias=True)
+    
+    x = batch_normalisation_layer(x, name+'_bn1', training)
+    
+    x = activation(x)
+    
+    x = conv2D_layer(bottom=x,
+                     name=name+'_2',
+                     kernel_size=kernel_size,
+                     num_filters=num_filters,
+                     strides=(strides[1],strides[1]),
+                     activation=tf.identity,
+                     padding=padding,
+                     weight_init=weight_init,
+                     add_bias=True)
+    
+    shortcut = conv2D_layer(bottom=bottom,
+                            name=name+'_shortcut',
+                            kernel_size=(1,1),
+                            num_filters=num_filters,
+                            strides=(1,1),
+                            activation=tf.identity,
+                            padding=padding,
+                            weight_init=weight_init,
+                            add_bias=True)
+    
+    shortcut = batch_normalisation_layer(shortcut, name+'_bn2', training)
+    
+    output = tf.add(shortcut, x)
+    
+    return output
+                      
+                      
 def dense_layer_bn(bottom,
                    name,
                    training,
@@ -720,7 +824,9 @@ def _bilinear_upsample_weights(shape):
     num_feature_maps = shape[2]
 
     weights = np.zeros(shape, dtype=np.float32)
-    upsample_kernel = _upsample_filt(kernel_size)
+    upsample_kernel = 
+    
+    (kernel_size)
 
     for i in range(num_feature_maps):
         weights[:, :, i, i] = upsample_kernel
