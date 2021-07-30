@@ -146,7 +146,7 @@ def ResUNet(images, training, nlabels):
     concat1 = tf.concat([up1, e1], axis=3,  name='concat1')
     d1 = layers.residual_block(concat1, 'd1', num_filters=64, strides=[1,1], training=training)
     
-    pred = layers.conv2D_layer(d1, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
+    pred = layers.conv2D_layer(d1, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity)
     
     return pred
     
