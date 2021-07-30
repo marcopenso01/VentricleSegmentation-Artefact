@@ -510,7 +510,7 @@ def selective_kernel_block(bottom,
     
     for i in range(M):
         
-        net = conv2D_dilated_layer_bn(bottom=net,
+        net = conv2D_dilated_layer_bn(bottom=x,
                                       name=name'_dil'+str(i),
                                       training=training,
                                       kernel_size=kernel_size,
@@ -520,12 +520,16 @@ def selective_kernel_block(bottom,
                                       padding=padding,
                                       weight_init=weight_init)
         
-        if i == 0:
-            fea_U = net
-        else:
-            fea_U = tf.add(fea_U, net)
+        xs.append(net)
     
-    gap = global_average_pool2d(fea_U)
+    for i in range(M):   
+        if i == 0:
+            U = xs[0]
+        else:
+            U = tf.add(U, xs[i])
+    
+    gap = global_average_pool2d(U)
+    
     fc = dense_layer(gap,
                      name=name+'_fc',
                      hidden_units=d
@@ -534,27 +538,31 @@ def selective_kernel_block(bottom,
                      add_bias=False)
     bn = batch_normalisation_layer(fc, name+'_bn', training)
     act = activation(bn)
-    fcs = act
     
-    for ii in range(M):
+    att_vec = []
+    
+    for i in range(M):
         
-        fcs = dense_layer(fcs,
-                          name=name+'_fc'+str(ii),
+        fcs = dense_layer(act,
+                          name=name+'_fc'+str(i),
                           hidden_units=input_feature
                           activation=tf.identity,
                           weight_init='he_normal',
                           add_bias=False)
-        if ii == 0:
-            att_vec = fcs
+        fcs = tf.expand_dims(fcs, axis=1)
+        fcs = tf.expand_dims(fcs, axis=1)
+        fcs_softmax = tf.nn.softmax(fcs)
+        fea_v = tf.multiply(fcs_softmax, xs[i])
+        
+        att_vec.append(fea_v)
+     
+    for i in range(M):
+        if i == 0:
+            y = att_vec[0]
         else:
-            att_vec = tf.add(att_vec, fcs)
+            y = tf.add(y, att_vec[i])
     
-    att_vec = tf.expand_dims(att_vec, axis=1)
-    att_vec = tf.expand_dims(att_vec, axis=1)
-    att_vec_softmax = tf.nn.softmax(att_vec)
-    fea_v = tf.multiply(fea_U, att_vec_softmax)
-    
-    return fea_v
+    return y
 
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
