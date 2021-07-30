@@ -488,26 +488,37 @@ def selective_kernel_block(bottom,
                            name, 
                            training,
                            activation=tf.nn.relu,
-                           kernel_size=[3,5,7],
+                           kernel_size=(3,3),
                            strides=(1,1),
                            activation=tf.nn.relu,
                            padding0"SAME",
-                           weight_init='he_normal'):
-    
+                           weight_init='he_normal',
+                           M=2,
+                           r=16):
+    '''
+    M: number of path
+    r: number of parameters in the fuse operator
+    G: controls the cardinality of each path
+    '''
     input_feature = bottom.get_shape().as_list()[-1]
     net = bottom
+    d = max(int(input_feature / r), 32)
     
-    for i in range(len(kernel_size)):
+    x = bottom
+    
+    xs = []
+    
+    for i in range(M):
         
-        net = conv2D_layer_bn(bottom=net,
-                              name=name+'_k'+str(i),
-                              training=training,
-                              kernel_size=(kernel_size[i],kernel_size[i]),
-                              num_filters=input_feature,
-                              strides=strides,
-                              activation=activation,
-                              padding=padding,
-                              weight_init=weight_init)
+        net = conv2D_dilated_layer_bn(bottom=net,
+                                      name=name'_dil'+str(i),
+                                      training=training,
+                                      kernel_size=kernel_size,
+                                      num_filters=input_feature,
+                                      rate=1+i,
+                                      activation=activation,
+                                      padding=padding,
+                                      weight_init=weight_init)
         
         if i == 0:
             fea_U = net
@@ -517,7 +528,7 @@ def selective_kernel_block(bottom,
     gap = global_average_pool2d(fea_U)
     fc = dense_layer(gap,
                      name=name+'_fc',
-                     hidden_units=32
+                     hidden_units=d
                      activation=tf.identity,
                      weight_init='he_normal',
                      add_bias=False)
@@ -525,10 +536,25 @@ def selective_kernel_block(bottom,
     act = activation(bn)
     fcs = act
     
-    for _ in range(len(kernal_size)):
+    for ii in range(M):
         
-        fcs = 
+        fcs = dense_layer(fcs,
+                          name=name+'_fc'+str(ii),
+                          hidden_units=input_feature
+                          activation=tf.identity,
+                          weight_init='he_normal',
+                          add_bias=False)
+        if ii == 0:
+            att_vec = fcs
+        else:
+            att_vec = tf.add(att_vec, fcs)
     
+    att_vec = tf.expand_dims(att_vec, axis=1)
+    att_vec = tf.expand_dims(att_vec, axis=1)
+    att_vec_softmax = tf.nn.softmax(att_vec)
+    fea_v = tf.multiply(fea_U, att_vec_softmax)
+    
+    return fea_v
 
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
