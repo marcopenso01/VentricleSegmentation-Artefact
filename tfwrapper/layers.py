@@ -19,6 +19,17 @@ def max_pool_layer2d(x, kernel_size=(2, 2), strides=(2, 2), padding="SAME"):
 
     return op
 
+
+def global_average_pool2d(x):
+    '''
+    2D global average pooling layer
+    '''
+    
+    op = tf.reduce_mean(x,[1,2])
+    
+    return op
+
+
 def max_pool_layer3d(x, kernel_size=(2, 2, 2), strides=(2, 2, 2), padding="SAME"):
     '''
     3D max pooling layer with 2x2x2 pooling as default
@@ -124,55 +135,6 @@ def batch_normalisation_layer(bottom, name, training):
                                         scope=name, center=True, scale=True)
 
     return h_bn
-
-#
-# def batch_normalisation_layer(bottom, name, training, moving_average_decay=0.99, epsilon=1e-3):
-#     '''
-#     Batch normalisation layer (Adapted from https://github.com/tensorflow/tensorflow/issues/1122)
-#     :param bottom: Input layer (should be before activation)
-#     :param name: A name for the computational graph
-#     :param training: A tf.bool specifying if the layer is executed at training or testing time
-#     :return: Batch normalised activation
-#     '''
-#
-#     with tf.compat.v1.variable_scope(name):
-#
-#         n_out = bottom.get_shape().as_list()[-1]
-#         tensor_dim = len(bottom.get_shape().as_list())
-#
-#         if tensor_dim == 2:
-#             # must be a dense layer
-#             moments_over_axes = [0]
-#         elif tensor_dim == 4:
-#             # must be a 2D conv layer
-#             moments_over_axes = [0, 1, 2]
-#         elif tensor_dim == 5:
-#             # must be a 3D conv layer
-#             moments_over_axes = [0, 1, 2, 3]
-#         else:
-#             # is not likely to be something reasonable
-#             raise ValueError('Tensor dim %d is not supported by this batch_norm layer' % tensor_dim)
-#
-#         init_beta = tf.constant(0.0, shape=[n_out], dtype=tf.float32)
-#         init_gamma = tf.constant(1.0, shape=[n_out], dtype=tf.float32)
-#         beta = tf.compat.v1.get_variable(name='beta', dtype=tf.float32, initializer=init_beta, regularizer=None,
-#                                trainable=True)
-#         gamma = tf.compat.v1.get_variable(name='gamma', dtype=tf.float32, initializer=init_gamma, regularizer=None,
-#                                 trainable=True)
-#
-#         batch_mean, batch_var = tf.nn.moments(bottom, moments_over_axes, name='moments')
-#         ema = tf.train.ExponentialMovingAverage(decay=moving_average_decay)
-#
-#         def mean_var_with_update():
-#             ema_apply_op = ema.apply([batch_mean, batch_var])
-#             with tf.control_dependencies([ema_apply_op]):
-#                 return tf.identity(batch_mean), tf.identity(batch_var)
-#
-#         mean, var = tf.cond(training, mean_var_with_update,
-#                             lambda: (ema.average(batch_mean), ema.average(batch_var)))
-#         normalised = tf.nn.batch_normalization(bottom, mean, var, beta, gamma, epsilon)
-#
-#         return normalised
 
 ### FEED_FORWARD LAYERS ##############################################################################
 
@@ -476,6 +438,97 @@ def dense_layer(bottom,
         _add_summaries(op, weights, biases)
 
         return op
+
+
+# Squeeze and Excitation
+'''
+Let’s add parameters to each channel of a convolutional block so that the 
+network can adaptively adjust the weighting of each feature map. 
+'''
+def se_block(tensor,
+             name,
+             activation=tf.nn.relu,
+             ratio=16):
+    
+    init = tensor
+    #number of input channels
+    num_filters = tensor.get_shape().as_list()[-1]
+    
+    se = global_average_pool2d(init)
+    
+    se = dense_layer(se,
+                     name=name+'_0',
+                     hidden_units=num_filters // ratio,
+                     activation=tf.nn.relu,
+                     weight_init='he_normal',
+                     add_bias=False)
+    
+    se = dense_layer(se,
+                     name=name+'_1',
+                     hidden_units=num_filters,
+                     activation=tf.math.sigmoid,
+                     weight_init='he_normal',
+                     add_bias=False)
+    
+    se = tf.reshape(se, [-1,1,1,num_filters])
+    
+    x = tf.math.multiply(init, se)
+    
+    return x
+
+
+# Selective Kernel 
+'''
+It is a process in which convolutional layers can adaptively adjust their 
+receptive field (RF) sizes.
+Advantage: Feature map with different receptive field (RF) in order to collect 
+multi-scale spatial information.
+'''
+def selective_kernel_block(bottom, 
+                           name, 
+                           training,
+                           activation=tf.nn.relu,
+                           kernel_size=[3,5,7],
+                           strides=(1,1),
+                           activation=tf.nn.relu,
+                           padding0"SAME",
+                           weight_init='he_normal'):
+    
+    input_feature = bottom.get_shape().as_list()[-1]
+    net = bottom
+    
+    for i in range(len(kernel_size)):
+        
+        net = conv2D_layer_bn(bottom=net,
+                              name=name+'_k'+str(i),
+                              training=training,
+                              kernel_size=(kernel_size[i],kernel_size[i]),
+                              num_filters=input_feature,
+                              strides=strides,
+                              activation=activation,
+                              padding=padding,
+                              weight_init=weight_init)
+        
+        if i == 0:
+            fea_U = net
+        else:
+            fea_U = tf.add(fea_U, net)
+    
+    gap = global_average_pool2d(fea_U)
+    fc = dense_layer(gap,
+                     name=name+'_fc',
+                     hidden_units=32
+                     activation=tf.identity,
+                     weight_init='he_normal',
+                     add_bias=False)
+    bn = batch_normalisation_layer(fc, name+'_bn', training)
+    act = activation(bn)
+    fcs = act
+    
+    for _ in range(len(kernal_size)):
+        
+        fcs = 
+    
 
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
