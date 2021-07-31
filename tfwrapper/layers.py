@@ -190,6 +190,7 @@ def dense_block(bottom,
     This is added with the input and sent to the next layer in the network.
     MOre details here: https://towardsdatascience.com/paper-review-densenet-densely-connected-convolutional-networks-acf9065dfefb
     '''
+    bottom_num_filters = bottom.get_shape().as_list()[-1]
     
     x = batch_normalisation_layer(bottom, name+'_bn0', training)
     
@@ -225,7 +226,21 @@ def dense_block(bottom,
         
         concat_feat = tf.concat([concat_feat, x], axis=-1)
     
-    return concat_feat
+    x = batch_normalisation_layer(concat_feat, name+'_bn', training)
+    
+    x = activation(x)
+
+    x = conv2D_layer(bottom=x,
+                     name=name,
+                     kernel_size=(1,1),
+                     num_filters=bottom_num_filters,
+                     strides=strides,
+                     activation=tf.identity,
+                     padding=padding,
+                     weight_init=weight_init,
+                     add_bias=False)
+
+    return x
 
 
 def conv3D_layer(bottom,
