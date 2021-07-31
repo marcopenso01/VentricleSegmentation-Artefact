@@ -565,6 +565,17 @@ def selective_kernel_block(bottom,
     return y
 
 
+def conv_block_att_module(bottom,
+                          name,
+                          training,
+                          kernel_size=(3,3),
+                          num_filters=32,
+                          strides=(1,1),
+                          activation=tf.nn.relu,
+                          padding="SAME",
+                          weight_init='he_normal'):
+
+
 ### BATCH_NORM SHORTCUTS #####################################################################################
 
 def conv2D_layer_bn(bottom,
