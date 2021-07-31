@@ -195,7 +195,9 @@ def dense_block(bottom,
     x = batch_normalisation_layer(bottom, name+'_bn0', training)
     
     x = activation(x)
-
+    
+    #real dense block provides a 1x1 conv layer (Bottleneck Layer).
+    #here it is not implemented
     x = conv2D_layer(bottom=x,
                      name=name+'_0'),
                      kernel_size=kernel_size,
