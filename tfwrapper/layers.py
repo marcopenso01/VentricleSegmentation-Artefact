@@ -205,7 +205,7 @@ def dense_block(bottom,
                      weight_init=weight_init,
                      add_bias=False)
         
-    concat_feat = x
+    concat_feat = tf.concat([bottom, x], axis=-1)
     
     for i in range(1, n_layers):
         
