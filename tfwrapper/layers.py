@@ -20,16 +20,6 @@ def max_pool_layer2d(x, kernel_size=(2, 2), strides=(2, 2), padding="SAME"):
     return op
 
 
-def global_average_pool2d(x):
-    '''
-    2D global average pooling layer
-    '''
-    
-    op = tf.reduce_mean(x,[1,2])
-    
-    return op
-
-
 def max_pool_layer3d(x, kernel_size=(2, 2, 2), strides=(2, 2, 2), padding="SAME"):
     '''
     3D max pooling layer with 2x2x2 pooling as default
@@ -191,6 +181,15 @@ def dense_block(bottom,
                 padding="SAME",
                 weight_init='he_normal',
                 n_layers=4):
+    '''
+    dense block of 4 conv layers (default n_layers=4) where the input 
+    consists of k feature maps. 
+    Each conv layer outputs k/4 feature maps which is concatenated with 
+    the input to all the next conv layers. The output of all these conv 
+    layers are then concatenated to obtain k output feature maps.
+    This is added with the input and sent to the next layer in the network.
+    MOre details here: https://towardsdatascience.com/paper-review-densenet-densely-connected-convolutional-networks-acf9065dfefb
+    '''
     
     x = batch_normalisation_layer(bottom, name+'_bn0', training)
     
@@ -444,33 +443,35 @@ def dense_layer(bottom,
 '''
 Let’s add parameters to each channel of a convolutional block so that the 
 network can adaptively adjust the weighting of each feature map. 
+As described in https://arxiv.org/pdf/1709.01507.pdf
 '''
 def se_block(tensor,
              name,
              activation=tf.nn.relu,
+             weight_init='he_normal',
              ratio=16):
     
     init = tensor
     #number of input channels
     num_filters = tensor.get_shape().as_list()[-1]
     
-    se = global_average_pool2d(init)
+    se = tf.reduce_mean(init,[1,2], keepdims=True)
     
     se = dense_layer(se,
                      name=name+'_0',
                      hidden_units=num_filters // ratio,
                      activation=tf.nn.relu,
-                     weight_init='he_normal',
+                     weight_init=weight_init,
                      add_bias=False)
     
     se = dense_layer(se,
                      name=name+'_1',
                      hidden_units=num_filters,
                      activation=tf.math.sigmoid,
-                     weight_init='he_normal',
+                     weight_init=weight_init,
                      add_bias=False)
     
-    se = tf.reshape(se, [-1,1,1,num_filters])
+    #se = tf.reshape(se, [-1,1,1,num_filters])
     
     x = tf.math.multiply(init, se)
     
@@ -483,6 +484,7 @@ It is a process in which convolutional layers can adaptively adjust their
 receptive field (RF) sizes.
 Advantage: Feature map with different receptive field (RF) in order to collect 
 multi-scale spatial information.
+As described in https://arxiv.org/pdf/1903.06586.pdf
 '''
 def selective_kernel_block(bottom, 
                            name, 
@@ -528,13 +530,13 @@ def selective_kernel_block(bottom,
         else:
             U = tf.add(U, xs[i])
     
-    gap = global_average_pool2d(U)
+    gap = tf.reduce_mean(U,[1,2], keepdims=True)
     
-    fc = dense_layer(gap,
+    fc = dense_layer(bottom=gap,
                      name=name+'_fc',
                      hidden_units=d
                      activation=tf.identity,
-                     weight_init='he_normal',
+                     weight_init=weight_init,
                      add_bias=False)
     bn = batch_normalisation_layer(fc, name+'_bn', training)
     act = activation(bn)
@@ -543,11 +545,11 @@ def selective_kernel_block(bottom,
     
     for i in range(M):
         
-        fcs = dense_layer(act,
+        fcs = dense_layer(bottom=act,
                           name=name+'_fc'+str(i),
                           hidden_units=input_feature
                           activation=tf.identity,
-                          weight_init='he_normal',
+                          weight_init=weight_init,
                           add_bias=False)
         fcs = tf.expand_dims(fcs, axis=1)
         fcs = tf.expand_dims(fcs, axis=1)
@@ -562,18 +564,104 @@ def selective_kernel_block(bottom,
         else:
             y = tf.add(y, att_vec[i])
     
-    return y
+    return y                  
 
 
 def conv_block_att_module(bottom,
                           name,
-                          training,
-                          kernel_size=(3,3),
-                          num_filters=32,
-                          strides=(1,1),
+                          kernel_size=(7,7),
+                          ratio=8,
                           activation=tf.nn.relu,
-                          padding="SAME",
                           weight_init='he_normal'):
+    '''
+    Contains the implementation of Convolutional Block Attention Module(CBAM) block.
+    As described in https://arxiv.org/abs/1807.06521.
+    '''
+    attention_feature = channel_attention(bottom=bottom, 
+                                          name=name,
+                                          ratio=ratio,
+                                          activation=activation,
+                                          weight_init=weight_init)
+    
+    attention_feature = spatial_attention(bottom=attention_feature,
+                                          name=name,
+                                          kernel_size=kernel_size,
+                                          activation=activation,
+                                          weight_init=weight_init)
+    
+    return attention_feature
+    
+ 
+def channel_attention(bottom,
+                      name,
+                      ratio=8,
+                      activation=tf.nn.relu,
+                      weight_init='he_normal'):
+    
+    channel = bottom.get_shape().as_list()[-1]
+    
+    avg_pool = tf.reduce_mean(bottom,[1,2], keepdims=True)
+    
+    avg_pool = dense_layer(bottom=avg_pool,
+                           name=name+'_mpl0',
+                           hidden_units=channel//ratio
+                           activation=activation,
+                           weight_init=weight_init,
+                           add_bias=False)
+    
+    avg_pool = dense_layer(bottom=avg_pool,
+                           name=name+'_mpl1',
+                           hidden_units=channel
+                           activation=activation,
+                           weight_init=weight_init,
+                           add_bias=False)
+    
+    max_pool = tf.reduce_max(bottom, axis=[1,2], keepdims=True) 
+    
+    max_pool = dense_layer(bottom=max_pool,
+                           name=name+'_mpl2',
+                           hidden_units=channel//ratio
+                           activation=activation,
+                           weight_init=weight_init,
+                           add_bias=False)
+    
+    max_pool = dense_layer(bottom=max_pool,
+                           name=name+'_mpl3',
+                           hidden_units=channel
+                           activation=activation,
+                           weight_init=weight_init,
+                           add_bias=False)
+    
+    scale = tf.add(avg_pool, max_pool)
+    scale = tf.math.sigmoid(scale)
+    
+    return tf.multiply(bottom, scale)
+
+
+def spatial_attention(bottom, 
+                      name,
+                      kernel_size=(7,7),
+                      activation=tf.nn.relu,
+                      weight_init='he_normal'):
+    
+    avg_pool = tf.reduce_mean(bottom, axis=[3], keepdims=True)
+    max_pool = tf.reduce_max(bottom, axis=[3], keepdims=True)
+    
+    concat = tf.concat([avg_pool,max_pool], 3)
+    
+    concat = conv2D_layer(bottom=concat,
+                          name=name+'_spatial',
+                          kernel_size=kernel_size,
+                          num_filters=1,
+                          strides=(1,1),
+                          activation=tf.identity,
+                          padding="SAME",
+                          weight_init=weight_init,
+                          add_bias=False)
+    
+    concat = tf.math.sigmoid(concat)
+    
+    return tf.multiply(bottom, concat)
 
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
@@ -745,6 +833,10 @@ def residual_block(bottom,
                    padding="SAME",
                    weight_init='he_normal'):
     
+    '''
+    As described in https://arxiv.org/pdf/1711.10684.pdf
+    '''
+    
     x = batch_normalisation_layer(bottom, name+'_bn1', training)
     
     x = activation(x)
@@ -799,6 +891,10 @@ def res_block_initial(bottom,
                       activation=tf.nn.relu,
                       padding="SAME",
                       weight_init='he_normal'):
+    
+    '''
+    As described in https://arxiv.org/pdf/1711.10684.pdf
+    '''
     
     x = conv2D_layer(bottom=bottom,
                      name=name+'_1',
