@@ -126,6 +126,11 @@ def batch_normalisation_layer(bottom, name, training):
 
     return h_bn
 
+
+def Upsample(tensor, rate=2):
+    return tf.image.resize_bilinear(tensor, (tf.shape(tensor)[1] * rate, tf.shape(tensor)[2] * rate))
+
+
 ### FEED_FORWARD LAYERS ##############################################################################
 
 def conv2D_layer(bottom,
@@ -569,17 +574,18 @@ def selective_kernel_block(bottom,
     
     return y                  
 
-
+# Convolutional block attention module (CBAM)
+'''
+Contains the implementation of Convolutional Block Attention Module(CBAM) block.
+As described in https://arxiv.org/abs/1807.06521.
+'''
 def conv_block_att_module(bottom,
                           name,
                           kernel_size=(7,7),
                           ratio=8,
                           activation=tf.nn.relu,
                           weight_init='he_normal'):
-    '''
-    Contains the implementation of Convolutional Block Attention Module(CBAM) block.
-    As described in https://arxiv.org/abs/1807.06521.
-    '''
+  
     attention_feature = channel_attention(bottom=bottom, 
                                           name=name,
                                           ratio=ratio,
@@ -666,6 +672,58 @@ def spatial_attention(bottom,
     
     return tf.multiply(bottom, concat)
 
+
+#Attention gate
+'''Attention, in the context of image segmentation, is a way to highlight 
+only the relevant activations during training. This reduces the computational 
+resources wasted on irrelevant activations, providing the network with better 
+generalization power. Essentially, the network can pay “attention” to certain 
+parts of the image.
+As described in https://arxiv.org/pdf/1804.03999.pdf
+'''
+def attention(down_tensor,
+              up_tensor,
+              weight_init='he_normal'):
+    
+    channel = down_tensor.get_shape().as_list()[-1]
+    
+    x = conv2D_layer(bottom=down_tensor,
+                     name=name+'_g',
+                     kernel_size=(1,1),
+                     num_filters=channel,
+                     strides=(2,2),
+                     activation=tf.identity,
+                     padding="VALID",
+                     weight_init=weight_init,
+                     add_bias=False)
+    
+    g = conv2D_layer(bottom=up_tensor,
+                     name=name+'_x',
+                     kernel_size=(1,1),
+                     num_filters=channel,
+                     strides=(1,1),
+                     activation=tf.identity,
+                     padding="SAME",
+                     weight_init=weight_init,
+                     add_bias=False)
+    
+    net = tf.add(g, x)
+    net = tf.nn.relu(net)
+    net = conv2D_layer(bottom=net,
+                       name=name+'_x',
+                       kernel_size=(1,1),
+                       num_filters=1,
+                       strides=(1,1),
+                       activation=tf.identity,
+                       padding="SAME",
+                       weight_init=weight_init,
+                       add_bias=False)
+    net = tf.math.sigmoid(net)
+    net = tf.image.resize_bilinear(net, (tf.shape(net)[1] * 2, tf.shape(net)[2] * 2))
+    
+    return tf.multiply(net, down_tensor)
+              
+              
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
 
