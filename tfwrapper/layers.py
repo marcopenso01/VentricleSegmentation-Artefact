@@ -710,7 +710,7 @@ def attention(down_tensor,
     net = tf.add(g, x)
     net = tf.nn.relu(net)
     net = conv2D_layer(bottom=net,
-                       name=name+'_x',
+                       name=name,
                        kernel_size=(1,1),
                        num_filters=1,
                        strides=(1,1),
