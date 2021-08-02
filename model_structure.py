@@ -182,22 +182,22 @@ def DenseUNet(images, training, nlabels):
     #decoder
     up1 = layers.Upsample(dens4)
     concat1 = tf.concat([up1, dens3], axis=3, name='concat1')
-    conv2 = conv2D_layer_bn(concat1, 'conv2', num_filters=640, kernel_size=(3,3), training=training)
+    conv2 = layers.conv2D_layer_bn(concat1, 'conv2', num_filters=640, kernel_size=(3,3), training=training)
     
     up2 = layers.Upsample(conv2)
     concat2 = tf.concat([up2, dens2], axis=3, name='concat2')
-    conv3 = conv2D_layer_bn(concat2, 'conv3', num_filters=256, kernel_size=(3,3), training=training)
+    conv3 = layers.conv2D_layer_bn(concat2, 'conv3', num_filters=256, kernel_size=(3,3), training=training)
 
     up3 = layers.Upsample(conv3)
     concat3 = tf.concat([up3, dens1], axis=3, name='concat3')
-    conv4 = conv2D_layer_bn(concat3, 'conv4', num_filters=64, kernel_size=(3,3), training=training)
+    conv4 = layers.conv2D_layer_bn(concat3, 'conv4', num_filters=64, kernel_size=(3,3), training=training)
     
     up4 = layers.Upsample(conv4)
     concat4 = tf.concat([up4, conv1], axis=3, name='concat4')
-    conv5 = conv2D_layer_bn(concat4, 'conv5', num_filters=64, kernel_size=(3,3), training=training)
+    conv5 = layers.conv2D_layer_bn(concat4, 'conv5', num_filters=64, kernel_size=(3,3), training=training)
     
     up5 = layers.Upsample(conv5)
-    conv6 = conv2D_layer_bn(up5, 'conv6', num_filters=48, kernel_size=(3,3), training=training)
+    conv6 = layers.conv2D_layer_bn(up5, 'conv6', num_filters=48, kernel_size=(3,3), training=training)
     
     pred = layers.conv2D_layer_bn(conv6, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
 
