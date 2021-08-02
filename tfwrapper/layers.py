@@ -569,7 +569,8 @@ def selective_kernel_block(bottom,
     '''
     #input_feature = bottom.get_shape().as_list()[-1]
     input_feature = num_filters
-    d = max(int(input_feature / r), 32)
+    #d = max(int(input_feature / r), 32)
+    d = input_feature / 2
     
     x = bottom
     
