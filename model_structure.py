@@ -59,8 +59,9 @@ def unet2D_same(images, training, nlabels):
     conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=1024, training=training)
     logging.info('conv5_2')
     logging.info(conv5_2.shape)
-
-    upconv4 = layers.deconv2D_layer_bn(conv5_2, name='upconv4', kernel_size=(4, 4), strides=(2, 2), num_filters=512, weight_init='bilinear', training=training)
+    
+    upconv4 = layers.Upsample(conv5_2)
+    #upconv4 = layers.deconv2D_layer_bn(conv5_2, name='upconv4', kernel_size=(4, 4), strides=(2, 2), num_filters=512, weight_init='bilinear', training=training)
     logging.info('upconv4')
     logging.info(upconv4.shape)
     concat4 = layers.crop_and_concat_layer([conv4_2, upconv4], axis=3)
@@ -73,8 +74,9 @@ def unet2D_same(images, training, nlabels):
     conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=512, training=training)
     logging.info('conv6_2')
     logging.info(conv6_2.shape)
-
-    upconv3 = layers.deconv2D_layer_bn(conv6_2, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
+    
+    upconv3 = layers.Upsample(conv6_2)
+    #upconv3 = layers.deconv2D_layer_bn(conv6_2, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
     logging.info('upconv3')
     logging.info(upconv3.shape)
     concat3 = tf.concat([conv3_2, upconv3], axis=3, name='concat3')
@@ -88,7 +90,8 @@ def unet2D_same(images, training, nlabels):
     logging.info('conv7_2')
     logging.info(conv7_2.shape)
 
-    upconv2 = layers.deconv2D_layer_bn(conv7_2, name='upconv2', kernel_size=(4, 4), strides=(2, 2), num_filters=128, weight_init='bilinear', training=training)
+    upconv2 = layers.Upsample(conv7_2)
+    #upconv2 = layers.deconv2D_layer_bn(conv7_2, name='upconv2', kernel_size=(4, 4), strides=(2, 2), num_filters=128, weight_init='bilinear', training=training)
     logging.info('upconv2')
     logging.info(upconv2.shape)
     concat2 = tf.concat([conv2_2, upconv2], axis=3, name='concat2')
@@ -102,7 +105,8 @@ def unet2D_same(images, training, nlabels):
     logging.info('conv8_2')
     logging.info(conv8_2.shape)
 
-    upconv1 = layers.deconv2D_layer_bn(conv8_2, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
+    upconv1 = layers.Upsample(conv8_2)
+    #upconv1 = layers.deconv2D_layer_bn(conv8_2, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
     logging.info('upconv1')
     logging.info(upconv1.shape)
     concat1 = tf.concat([conv1_2, upconv1], axis=3, name='concat1')
@@ -150,12 +154,15 @@ def ResUNet(images, training, nlabels):
     
     return pred
     
-    
+
+#Dense-UNet
+'''
+As described in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7276369/
+'''
 def DenseUNet(images, training, nlabels):
     
     #encoder
-    conv1 = layers.conv2D_layer_bn(images, 'conv1', num_filters=64, training=training)
-    dens1 = layers.dense_block(conv1, 'dens1', num_filters=64, n_layers=4, training=training)
+    dens1 = layers.dense_block(images, 'dens1', num_filters=64, n_layers=4, training=training)
     pool1 = layers.max_pool_layer2d(dens1)
     
     conv2 = layers.conv2D_layer_bn(pool1, 'conv2', num_filters=128, training=training)
