@@ -141,6 +141,7 @@ def batch_normalisation_layer(bottom, name, training):
 
 
 def Upsample(tensor, rate=2):
+    
     return tf.image.resize_bilinear(tensor, (tf.shape(tensor)[1] * rate, tf.shape(tensor)[2] * rate))
 
 
