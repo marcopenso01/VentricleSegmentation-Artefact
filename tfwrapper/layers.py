@@ -558,7 +558,7 @@ def selective_kernel_block(bottom,
                            kernel_size=(3,3),
                            strides=(1,1),
                            activation=tf.nn.relu,
-                           padding0"SAME",
+                           padding="SAME",
                            weight_init='he_normal',
                            M=2,
                            r=16):
