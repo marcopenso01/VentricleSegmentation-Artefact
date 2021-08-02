@@ -553,6 +553,7 @@ As described in https://arxiv.org/pdf/1903.06586.pdf
 def selective_kernel_block(bottom, 
                            name, 
                            training,
+                           num_filters=32,
                            activation=tf.nn.relu,
                            kernel_size=(3,3),
                            strides=(1,1),
@@ -566,8 +567,8 @@ def selective_kernel_block(bottom,
     r: number of parameters in the fuse operator
     G: controls the cardinality of each path
     '''
-    input_feature = bottom.get_shape().as_list()[-1]
-    net = bottom
+    #input_feature = bottom.get_shape().as_list()[-1]
+    input_feature = num_filters
     d = max(int(input_feature / r), 32)
     
     x = bottom
