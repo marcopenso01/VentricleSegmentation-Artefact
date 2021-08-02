@@ -20,6 +20,19 @@ def max_pool_layer2d(x, kernel_size=(2, 2), strides=(2, 2), padding="SAME"):
     return op
 
 
+def avg_pool_layer2d(x, kernel_size=(2, 2), strides=(2, 2), padding="SAME"):
+    '''
+    2D average pooling layer with standard 2x2 pooling as default
+    '''
+
+    kernel_size_aug = [1, kernel_size[0], kernel_size[1], 1]
+    strides_aug = [1, strides[0], strides[1], 1]
+
+    op = tf.nn.avg_pool2d(x, ksize=kernel_size_aug, strides=strides_aug, padding=padding)
+
+    return op
+
+
 def max_pool_layer3d(x, kernel_size=(2, 2, 2), strides=(2, 2, 2), padding="SAME"):
     '''
     3D max pooling layer with 2x2x2 pooling as default
@@ -180,7 +193,7 @@ def dense_block(bottom,
                 name,
                 training,
                 kernel_size=(3, 3),
-                num_filters=32,
+                growth_rate=32,
                 strides=(1, 1),
                 activation=tf.nn.relu,
                 padding="SAME",
@@ -198,26 +211,26 @@ def dense_block(bottom,
     x = conv2D_layer(bottom=x,
                      name=name+'layer0_1x1'),
                      kernel_size=(1,1),
-                     num_filters=num_filters * 4,
+                     num_filters=128,
                      strides=strides,
                      activation=tf.identity,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = tf.nn.dropout(x, rate=0.5)
+    x = dropout_layer(x, name=name+'_layer0_drop0', training)
     
     x = batch_normalisation_layer(bottom, name+'_layer0_bn1', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
                      name=name+'layer0_3x3'),
                      kernel_size=kernel_size,
-                     num_filters=num_filters,
+                     num_filters=growth_rate,
                      strides=strides,
                      activation=tf.identity,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = tf.nn.dropout(x, rate=0.5)
+    x = dropout_layer(x, name=name+'_layer0_drop1', training)
         
     concat_feat = tf.concat([bottom, x], axis=-1)
     
@@ -228,31 +241,55 @@ def dense_block(bottom,
         x = conv2D_layer(bottom=x,
                          name=name+'_layer'+str(i)+'_1x1',
                          kernel_size=(1,1),
-                         num_filters=num_filters * 4,
+                         num_filters=128,
                          strides=strides,
                          activation=tf.identity,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = tf.nn.dropout(x, rate=0.5)
+        x = dropout_layer(x, name=name+'_layer'+str(i)+'_drop0', training)
         
         x = batch_normalisation_layer(x, name+'_layer'str(i)+'_bn1', training)
         x = activation(x)
         x = conv2D_layer(bottom=x,
                          name=name+'_layer'+str(i)+'_3x3',
                          kernel_size=kernel_size,
-                         num_filters=num_filters,
+                         num_filters=growth_rate,
                          strides=strides,
                          activation=tf.identity,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = tf.nn.dropout(x, rate=0.5)
+        x = dropout_layer(x, name=name+'_layer'+str(i)+'_drop1', training)
         
         concat_feat = tf.concat([concat_feat, x], axis=-1)
 
     return concat_feat
 
+
+def transition_layer(bottom,
+                     name,
+                     training,
+                     num_filters=32,
+                     activation=tf.nn.relu,
+                     weight_init='he_normal'):
+    
+    x = batch_normalisation_layer(bottom, name+'_bn', training)
+    x = activation(x)
+    x = conv2D_layer(bottom=x,
+                     name=name+'_conv'),
+                     kernel_size=(1,1),
+                     num_filters=num_filters,
+                     strides=(1,1),
+                     activation=tf.identity,
+                     padding="SAME",
+                     weight_init=weight_init,
+                     add_bias=False)
+    x = dropout_layer(x, name=name+'_drop', training)
+    x = avg_pool_layer2d(x)
+    
+    return x
+    
 
 def conv3D_layer(bottom,
                  name,
