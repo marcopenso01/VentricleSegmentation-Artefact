@@ -187,49 +187,67 @@ def dense_block(bottom,
                 weight_init='he_normal',
                 n_layers=4):
     '''
-    dense block of 4 conv layers (default n_layers=4) where the input 
-    consists of k feature maps. 
-    Each conv layer outputs k/4 feature maps which is concatenated with 
-    the input to all the next conv layers. The output of all these conv 
-    layers are then concatenated to obtain k output feature maps.
-    This is added with the input and sent to the next layer in the network.
+    num_filters:= growth_rate
     MOre details here: https://towardsdatascience.com/paper-review-densenet-densely-connected-convolutional-networks-acf9065dfefb
     '''
     #bottom_num_filters = bottom.get_shape().as_list()[-1]
     
-    x = batch_normalisation_layer(bottom, name+'_bn0', training)
-    
+    #Bottleneck Layer
+    x = batch_normalisation_layer(bottom, name+'_layer0_bn0', training)
     x = activation(x)
-    
-    #real dense block provides a 1x1 conv layer (Bottleneck Layer).
-    #here it is not implemented
     x = conv2D_layer(bottom=x,
-                     name=name+'_0'),
-                     kernel_size=kernel_size,
-                     num_filters=num_filters/n_layers,
+                     name=name+'layer0_1x1'),
+                     kernel_size=(1,1),
+                     num_filters=num_filters * 4,
                      strides=strides,
                      activation=tf.identity,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
+    x = tf.nn.dropout(x, rate=0.5)
+    
+    x = batch_normalisation_layer(bottom, name+'_layer0_bn1', training)
+    x = activation(x)
+    x = conv2D_layer(bottom=x,
+                     name=name+'layer0_3x3'),
+                     kernel_size=kernel_size,
+                     num_filters=num_filters,
+                     strides=strides,
+                     activation=tf.identity,
+                     padding=padding,
+                     weight_init=weight_init,
+                     add_bias=False)
+    x = tf.nn.dropout(x, rate=0.5)
         
     concat_feat = tf.concat([bottom, x], axis=-1)
     
     for i in range(1, n_layers):
         
-        x = batch_normalisation_layer(concat_feat, name+'_bn'+str(i), training)
-    
+        x = batch_normalisation_layer(concat_feat, name+'_layer'str(i)+'_bn0', training)
         x = activation(x)
-    
         x = conv2D_layer(bottom=x,
-                         name=name+'_'+str(i),
-                         kernel_size=kernel_size,
-                         num_filters=num_filters/n_layers,
+                         name=name+'_layer'+str(i)+'_1x1',
+                         kernel_size=(1,1),
+                         num_filters=num_filters * 4,
                          strides=strides,
                          activation=tf.identity,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
+        x = tf.nn.dropout(x, rate=0.5)
+        
+        x = batch_normalisation_layer(x, name+'_layer'str(i)+'_bn1', training)
+        x = activation(x)
+        x = conv2D_layer(bottom=x,
+                         name=name+'_layer'+str(i)+'_3x3',
+                         kernel_size=kernel_size,
+                         num_filters=num_filters,
+                         strides=strides,
+                         activation=tf.identity,
+                         padding=padding,
+                         weight_init=weight_init,
+                         add_bias=False)
+        x = tf.nn.dropout(x, rate=0.5)
         
         concat_feat = tf.concat([concat_feat, x], axis=-1)
 
