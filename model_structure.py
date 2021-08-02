@@ -127,6 +127,10 @@ def unet2D_same(images, training, nlabels):
     return pred
 
 
+#ResUnet
+'''
+As described in https://arxiv.org/pdf/1711.10684.pdf
+'''
 def ResUNet(images, training, nlabels):
     
     #encoder
@@ -138,15 +142,15 @@ def ResUNet(images, training, nlabels):
     b0 = layers.residual_block(e3, 'b0', num_filters=512, strides=[2,1], training=training)
     
     #decoder
-    up3 = layers.deconv2D_layer_bn(b0, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
+    up3 = layers.Upsample(b0)
     concat3 = tf.concat([up3, e3], axis=3,  name='concat3')
     d3 = layers.residual_block(concat3, 'd3', num_filters=256, strides=[1,1], training=training)
     
-    up2 = layers.deconv2D_layer_bn(d3, name='upconv2', kernel_size=(4, 4), strides=(2, 2), num_filters=128, weight_init='bilinear', training=training)
+    up2 = layers.Upsample(d3)
     concat2 = tf.concat([up2, e2], axis=3,  name='concat2')
     d2 = layers.residual_block(concat2, 'd2', num_filters=128, strides=[1,1], training=training)
     
-    up1 = layers.deconv2D_layer_bn(d2, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
+    up1 = layers.Upsample(d2)
     concat1 = tf.concat([up1, e1], axis=3,  name='concat1')
     d1 = layers.residual_block(concat1, 'd1', num_filters=64, strides=[1,1], training=training)
     
