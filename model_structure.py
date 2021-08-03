@@ -211,9 +211,36 @@ def DenseUNet(images, training, nlabels):
 #Proposed network
 def net1(images, training, nlabels):
 
+    #encoder
     e1 = layers.selective_kernel_block(images, 'e1', num_filters=32, training=training)
-    layers.dense_block(pool1, 'dens1', growth_rate=8, n_layers=4, training=training)
+    conv1 = layer.conv2D_layer_bn(e1, 'conv1', num_filters=32, training=training)
+    conc1 = tf.concat([e1, conv1], axis=3, name='conc1')
     
+    p1 = layers.max_pool_layer2d(conc1)
+    
+    e2 = layers.selective_kernel_block(p1, 'e2', num_filters=64, training=training)
+    conv2 = layer.conv2D_layer_bn(e2, 'conv2', num_filters=64, training=training)
+    conc2 = tf.concat([e2, conv2], axis=3, name='conc2')
+    
+    p2 = layers.max_pool_layer2d(conc2)
+    
+    e3 = layers.selective_kernel_block(p2, 'e3', num_filters=128, training=training)
+    conv3 = layer.conv2D_layer_bn(e3, 'conv3', num_filters=128, training=training)
+    conc3 = tf.concat([e3, conv3], axis=3, name='conc3')
+    
+    p3 = layers.max_pool_layer2d(conc3)
+    
+    e4 = layers.selective_kernel_block(p3, 'e4', num_filters=256, training=training)
+    conv4 = layer.conv2D_layer_bn(e4, 'conv4', num_filters=256, training=training)
+    conc4 = tf.concat([e4, conv4], axis=3, name='conc4')
+    
+    p4 = layers.max_pool_layer2d(conc4)
+    
+    #bridge
+    conv5 = layer.conv2D_layer_bn(p4, 'conv5', num_filters=256, training=training)
+    cbam = layer.conv_block_att_module(conv5, 'cbam')
+    
+    #decoder    
     conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=64, training=training)
     logging.info('conv1_2')
     logging.info(conv1_2.shape)
