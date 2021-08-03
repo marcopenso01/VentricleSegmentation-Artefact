@@ -212,127 +212,32 @@ def DenseUNet(images, training, nlabels):
 def net1(images, training, nlabels):
 
     #encoder
-    e1 = layers.selective_kernel_block(images, 'e1', num_filters=32, training=training)
-    conv1 = layer.conv2D_layer_bn(e1, 'conv1', num_filters=32, training=training)
-    conc1 = tf.concat([e1, conv1], axis=3, name='conc1')
+    select1 = layers.selective_kernel_block(images, 'select1', num_filters=32, training=training)
+        
+    pool1 = layers.max_pool_layer2d(select1)
     
-    p1 = layers.max_pool_layer2d(conc1)
+    select2 = layers.selective_kernel_block(pool1, 'select2', num_filters=48, training=training)
+    dens2 = layer.dense_block(select2, 'dens2', growth_rate=16, n_layers=2, training=training)
     
-    e2 = layers.selective_kernel_block(p1, 'e2', num_filters=64, training=training)
-    conv2 = layer.conv2D_layer_bn(e2, 'conv2', num_filters=64, training=training)
-    conc2 = tf.concat([e2, conv2], axis=3, name='conc2')
+    trans2 = layers.transition_layer(dens2, 'trans2', num_filters=48, pool=1, training=training)
     
-    p2 = layers.max_pool_layer2d(conc2)
+    select3 = layers.selective_kernel_block(trans2, 'select3', num_filters=96, training=training)
+    dens3 = layer.dense_block(select3, 'dens3', growth_rate=16, n_layers=3, training=training)
     
-    e3 = layers.selective_kernel_block(p2, 'e3', num_filters=128, training=training)
-    conv3 = layer.conv2D_layer_bn(e3, 'conv3', num_filters=128, training=training)
-    conc3 = tf.concat([e3, conv3], axis=3, name='conc3')
+    trans3 = layers.transition_layer(dens3, 'trans3', num_filters=96, pool=1, training=training)
     
-    p3 = layers.max_pool_layer2d(conc3)
+    select4 = layers.selective_kernel_block(trans3, 'select4', num_filters=192, training=training)
+    dens4 = layer.dense_block(select4, 'dens4', growth_rate=16, n_layers=4, training=training)
     
-    e4 = layers.selective_kernel_block(p3, 'e4', num_filters=256, training=training)
-    conv4 = layer.conv2D_layer_bn(e4, 'conv4', num_filters=256, training=training)
-    conc4 = tf.concat([e4, conv4], axis=3, name='conc4')
-    
-    p4 = layers.max_pool_layer2d(conc4)
+    trans4 = layers.transition_layer(dens4, 'trans4', num_filters=192, pool=1, training=training)
     
     #bridge
-    conv5 = layer.conv2D_layer_bn(p4, 'conv5', num_filters=256, training=training)
-    cbam = layer.conv_block_att_module(conv5, 'cbam')
+    b1 = layer.conv2D_layer_bn(trans4, 'b1', num_filters=384, training=training)
+    cbam = layer.conv_block_att_module(b1, 'cbam')
+    b2 = layer.conv2D_layer_bn(cbam, 'b2', num_filters=192, training=training)
     
     #decoder    
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=64, training=training)
-    logging.info('conv1_2')
-    logging.info(conv1_2.shape)
-
-    pool1 = layers.max_pool_layer2d(conv1_2)
-    logging.info('pool1')
-    logging.info(pool1.shape)
-
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=128, training=training)
-    logging.info('conv2_1')
-    logging.info(conv2_1.shape)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=128, training=training)
-    logging.info('conv2_2')
-    logging.info(conv2_2.shape)
-    
-    pool2 = layers.max_pool_layer2d(conv2_2)
-    logging.info('pool2')
-    logging.info(pool2.shape)
-
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=256, training=training)
-    logging.info('conv3_1')
-    logging.info(conv3_1.shape)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=256, training=training)
-    logging.info('conv3_2')
-    logging.info(conv3_2.shape)
-
-    pool3 = layers.max_pool_layer2d(conv3_2)
-    logging.info('pool3')
-    logging.info(pool3.shape)
-
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=512, training=training)
-    logging.info('conv4_1')
-    logging.info(conv4_1.shape)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=512, training=training)
-    logging.info('conv4_2')
-    logging.info(conv4_2.shape)
-
-    pool4 = layers.max_pool_layer2d(conv4_2)
-    logging.info('pool4')
-    logging.info(pool4.shape)
-
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=1024, training=training)
-    logging.info('conv5_1')
-    logging.info(conv5_1.shape)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=1024, training=training)
-    logging.info('conv5_2')
-    logging.info(conv5_2.shape)
-    
-    upconv4 = layers.Upsample(conv5_2)
-    #upconv4 = layers.deconv2D_layer_bn(conv5_2, name='upconv4', kernel_size=(4, 4), strides=(2, 2), num_filters=512, weight_init='bilinear', training=training)
-    logging.info('upconv4')
-    logging.info(upconv4.shape)
-    concat4 = layers.crop_and_concat_layer([conv4_2, upconv4], axis=3)
-    logging.info('concat4')
-    logging.info(concat4.shape)
-
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=512, training=training)
-    logging.info('conv6_1')
-    logging.info(conv6_1.shape)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=512, training=training)
-    logging.info('conv6_2')
-    logging.info(conv6_2.shape)
-    
-    upconv3 = layers.Upsample(conv6_2)
-    #upconv3 = layers.deconv2D_layer_bn(conv6_2, name='upconv3', kernel_size=(4, 4), strides=(2, 2), num_filters=256, weight_init='bilinear', training=training)
-    logging.info('upconv3')
-    logging.info(upconv3.shape)
-    concat3 = tf.concat([conv3_2, upconv3], axis=3, name='concat3')
-    logging.info('concat3')
-    logging.info(concat3.shape)
-
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=256, training=training)
-    logging.info('conv7_1')
-    logging.info(conv7_1.shape)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=256, training=training)
-    logging.info('conv7_2')
-    logging.info(conv7_2.shape)
-
-    upconv2 = layers.Upsample(conv7_2)
-    #upconv2 = layers.deconv2D_layer_bn(conv7_2, name='upconv2', kernel_size=(4, 4), strides=(2, 2), num_filters=128, weight_init='bilinear', training=training)
-    logging.info('upconv2')
-    logging.info(upconv2.shape)
-    concat2 = tf.concat([conv2_2, upconv2], axis=3, name='concat2')
-    logging.info('concat2')
-    logging.info(concat2.shape)
-
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=128, training=training)
-    logging.info('conv8_1')
-    logging.info(conv8_1.shape)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=128, training=training)
-    logging.info('conv8_2')
-    logging.info(conv8_2.shape)
+    up1 = layers.Upsample(b2)
 
     upconv1 = layers.Upsample(conv8_2)
     #upconv1 = layers.deconv2D_layer_bn(conv8_2, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
