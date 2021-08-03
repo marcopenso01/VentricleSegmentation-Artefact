@@ -273,8 +273,13 @@ def transition_layer(bottom,
                      training,
                      num_filters=32,
                      activation=tf.nn.relu,
-                     weight_init='he_normal'):
+                     weight_init='he_normal',
+                     pool=0):
     
+    '''
+    0: avg pool
+    1: max pool
+    '''
     x = batch_normalisation_layer(bottom, name+'_bn', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
@@ -287,7 +292,11 @@ def transition_layer(bottom,
                      weight_init=weight_init,
                      add_bias=False)
     x = dropout_layer(x, name=name+'_drop', training)
-    x = avg_pool_layer2d(x)
+    
+    if pool==0:
+        x = avg_pool_layer2d(x)
+    elif pool==1:
+        x = max_pool_layer2d(x)
     
     return x
     
