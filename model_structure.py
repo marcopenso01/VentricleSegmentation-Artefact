@@ -237,7 +237,7 @@ def net1(images, training, nlabels):
     b2 = layer.conv2D_layer_bn(cbam, 'b2', num_filters=192, training=training)
     
     #decoder    
-    up1 = layers.Upsample(b2)
+    up4 = layers.Upsample(b2)
 
     upconv1 = layers.Upsample(conv8_2)
     #upconv1 = layers.deconv2D_layer_bn(conv8_2, name='upconv1', kernel_size=(4, 4), strides=(2, 2), num_filters=64, weight_init='bilinear', training=training)
