@@ -790,7 +790,32 @@ def attention(down_tensor,
     
     return tf.multiply(net, down_tensor)
               
-              
+
+def projection(bottom,
+               name,
+               kernal_size=(1,1),
+               num_filters=32,
+               strides=(1,1),
+               activation=tf.nn.relu,
+               padding="SAME",
+               weight_init='he_normal'):
+    
+    conv_bn = batch_normalisation_layer(bottom, name+'_bn', training)
+
+    act = activation(conv_bn)
+    
+    conv = conv2D_layer(bottom=act,
+                        name=name,
+                        kernel_size=kernel_size,
+                        num_filters=num_filters,
+                        strides=strides,
+                        activation=tf.identity,
+                        padding=padding,
+                        weight_init=weight_init,
+                        add_bias=False)
+    
+    return conv
+
 
 ### BATCH_NORM SHORTCUTS #####################################################################################
 
