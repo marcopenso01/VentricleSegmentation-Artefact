@@ -100,66 +100,66 @@ def prepare_data(input_folder, output_file, nx, ny):
     hdf5_file = h5py.File(output_file, "w")
     
     # 1: 'RV', 2: 'Myo', 3: 'LV'
-addrs = []
-MASK = []
-IMG_SEG = []  #img in uint8 con segmentazione
-IMG_RAW = []  #img in float senza segmentazione
-IMG_CIR = []  #img in uint8 con segmentazione
-MASK_CIR = []
+    addrs = []
+    MASK = []
+    IMG_SEG = []  #img in uint8 con segmentazione
+    IMG_RAW = []  #img in float senza segmentazione
+    IMG_CIR = []  #img in uint8 con segmentazione
+    MASK_CIR = []
 
-path_seg = os.path.join(input_folder, 'SEG')
-path_seg = os.path.join(path_seg, os.listdir(path_seg)[0])
+    path_seg = os.path.join(input_folder, 'SEG')
+    path_seg = os.path.join(path_seg, os.listdir(path_seg)[0])
 
-path_raw = os.path.join(input_folder, 'RAW')
-path_raw = os.path.join(path_raw, os.listdir(path_raw)[0])
+    path_raw = os.path.join(input_folder, 'RAW')
+    path_raw = os.path.join(path_raw, os.listdir(path_raw)[0])
 
-path_cir = os.path.join(input_folder, 'CIRCLE')
-path_cir = os.path.join(path_cir, os.listdir(path_cir)[0])
+    path_cir = os.path.join(input_folder, 'CIRCLE')
+    path_cir = os.path.join(path_cir, os.listdir(path_cir)[0])
 
-for i in range(len(os.listdir(path_seg))):
-    dcmPath = os.path.join(path_seg, os.listdir(path_seg)[i])
-    data_row_img = pydicom.dcmread(dcmPath)
-    img = data_row_img.pixel_array
-    img = crop_or_pad_slice_to_size(img, nx, ny)
-    
-    green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
-    
-    if len(np.argwhere(green_pixels)) > 5:
-        
-        final_mask = generator_mask(img, green_pixels)
-        
-        if final_mask.max() > 3:
-            print('ERROR: max value of the mask %d is %d' % (i, final_mask.max()))
-        MASK.append(final_mask)
-        addrs.append(dcmPath)
-        IMG_SEG.append(img)
-        
-        # save data raw
-        dcmPath = os.path.join(path_raw, os.listdir(path_raw)[i])
+    for i in range(len(os.listdir(path_seg))):
+        dcmPath = os.path.join(path_seg, os.listdir(path_seg)[i])
         data_row_img = pydicom.dcmread(dcmPath)
         img = data_row_img.pixel_array
         img = crop_or_pad_slice_to_size(img, nx, ny)
-        IMG_RAW.append(img)
-        
-        # circle
-        dcmPath = os.path.join(path_cir, os.listdir(path_cir)[i])
-        data_row_img = pydicom.dcmread(dcmPath)
-        img = data_row_img.pixel_array
-        img = crop_or_pad_slice_to_size(img, nx, ny)
-        IMG_CIR.append(img)
-        
+
         green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
-        yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 100))
-    
+
         if len(np.argwhere(green_pixels)) > 5:
-            cir_mask = generator_mask(img, green_pixels)
-            MASK_CIR.append(cir_mask)
-        elif len(np.argwhere(yellow_pixels)) > 5:
-            cir_mask = imfill(yellow_pixels)
-            cir_mask[cir_mask>0]=1
-            MASK_CIR.append(cir_mask)
-        else:
-            MASK_CIR.append(np.zeros((nx,ny), dtype=np.uint8))
+
+            final_mask = generator_mask(img, green_pixels)
+
+            if final_mask.max() > 3:
+                print('ERROR: max value of the mask %d is %d' % (i, final_mask.max()))
+            MASK.append(final_mask)
+            addrs.append(dcmPath)
+            IMG_SEG.append(img)
+
+            # save data raw
+            dcmPath = os.path.join(path_raw, os.listdir(path_raw)[i])
+            data_row_img = pydicom.dcmread(dcmPath)
+            img = data_row_img.pixel_array
+            img = crop_or_pad_slice_to_size(img, nx, ny)
+            IMG_RAW.append(img)
+
+            # circle
+            dcmPath = os.path.join(path_cir, os.listdir(path_cir)[i])
+            data_row_img = pydicom.dcmread(dcmPath)
+            img = data_row_img.pixel_array
+            img = crop_or_pad_slice_to_size(img, nx, ny)
+            IMG_CIR.append(img)
+
+            green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
+            yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 100))
+
+            if len(np.argwhere(green_pixels)) > 5:
+                cir_mask = generator_mask(img, green_pixels)
+                MASK_CIR.append(cir_mask)
+            elif len(np.argwhere(yellow_pixels)) > 5:
+                cir_mask = imfill(yellow_pixels)
+                cir_mask[cir_mask>0]=1
+                MASK_CIR.append(cir_mask)
+            else:
+                MASK_CIR.append(np.zeros((nx,ny), dtype=np.uint8))
                 
     
     dt = h5py.special_dtype(vlen=str)
