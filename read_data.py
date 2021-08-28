@@ -227,3 +227,25 @@ if __name__ == '__main__':
     nx = 250
     ny = 250
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
+
+'''
+img = MASK[2]
+index = img > 0
+a = img.copy()
+a[index] = 1
+plt.imshow(a)
+contours = cv2.findContours(a, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours = contours[0] if len(contours) == 2 else contours[1]
+for cntr in contours:
+    x,y,w,h = cv2.boundingRect(cntr)
+    top_left=(x,y)
+    bottom_right=(x+w-1,y+h-1)
+    print('top left=',top_left)
+    print('bottom right=',bottom_right)
+
+cx = int((top_left[1]+bottom_right[1])/2)   #row
+cy = int((top_left[0]+bottom_right[0])/2)   #column
+
+len_x = int(bottom_right[1]-top_left[1])
+len_y = int(bottom_right[0]-top_left[0])
+'''
