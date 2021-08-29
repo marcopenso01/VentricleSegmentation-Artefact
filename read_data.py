@@ -161,6 +161,57 @@ def prepare_data(input_folder, output_file, nx, ny):
             else:
                 MASK_CIR.append(np.zeros((nx,ny), dtype=np.uint8))
                 
+    CX = []
+    CY = []
+    for ii in range(0,4):
+        
+        img = MASK[ii]
+        index = img > 0
+        a = img.copy()
+        a[index] = 1
+        #plt.imshow(a)
+        contours, hier = cv2.findContours(a, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        top_left_x = 1000
+        top_left_y = 1000
+        bottom_right_x = 0
+        bottom_right_y = 0
+        for cntr in contours:
+            x,y,w,h = cv2.boundingRect(cntr)
+            if x < top_left_x:
+                top_left_x = x
+            if y < top_left_y:
+                top_left_y= y
+            if x+w-1 > bottom_right_x:
+                bottom_right_x = x+w-1
+            if y+h-1 > bottom_right_y:
+                bottom_right_y = y+h-1        
+        top_left = (top_left_x, top_left_y)
+        bottom_right = (bottom_right_x, bottom_right_y)
+        #print('top left=',top_left)
+        #print('bottom right=',bottom_right)
+        cx = int((top_left[1]+bottom_right[1])/2)   #row
+        cy = int((top_left[0]+bottom_right[0])/2)   #column
+        len_x = int(bottom_right[1]-top_left[1])
+        len_y = int(bottom_right[0]-top_left[0])
+        #print(len_x, len_y)
+        CX.append(cx)
+        CY.append(cy)
+        
+        '''
+        for i in range(top_left[0],bottom_right[0]+1):
+            a[top_left[1]-1,i]=1
+        for i in range(top_left[0],bottom_right[0]+1):
+            a[bottom_right[1]+1,i]=1
+        for i in range(top_left[1],bottom_right[1]+1):
+            a[i, top_left[0]-1]=1
+        for i in range(top_left[1],bottom_right[1]+1):
+            a[i, bottom_right[0]+1]=1
+        plt.figure()
+        plt.imshow(a)
+        '''
+    
+    cx = int(np.asarray(CX).mean())
+    cy = int(np.asarray(CY).mean())
     
     dt = h5py.special_dtype(vlen=str)
     hdf5_file.create_dataset('paz', (len(addrs),), dtype=dt)
@@ -224,28 +275,6 @@ if __name__ == '__main__':
     # Paths settings
     input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz1'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
-    nx = 250
-    ny = 250
+    nx = 390
+    ny = 390
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
-
-'''
-img = MASK[2]
-index = img > 0
-a = img.copy()
-a[index] = 1
-plt.imshow(a)
-contours = cv2.findContours(a, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-contours = contours[0] if len(contours) == 2 else contours[1]
-for cntr in contours:
-    x,y,w,h = cv2.boundingRect(cntr)
-    top_left=(x,y)
-    bottom_right=(x+w-1,y+h-1)
-    print('top left=',top_left)
-    print('bottom right=',bottom_right)
-
-cx = int((top_left[1]+bottom_right[1])/2)   #row
-cy = int((top_left[0]+bottom_right[0])/2)   #column
-
-len_x = int(bottom_right[1]-top_left[1])
-len_y = int(bottom_right[0]-top_left[0])
-'''
