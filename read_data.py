@@ -47,6 +47,46 @@ def crop_or_pad_slice_to_size(slice, nx, ny):
         return np.dstack((RGB[0], RGB[1], RGB[2]))
     else:
         return slice_cropped
+    
+    
+def crop_or_pad_slice_to_size_specific_point(slice, nx, ny, cx, cy):
+    
+    if len(slice.shape) == 3:
+        stack = [slice[:,:,0], slice[:,:,1], slice[:,:,2]]
+        RGB = []
+    else:
+        stack = [slice]
+        
+    for i in range(len(stack)):
+        img = stack[i]
+        x, y = img.shape
+        y1 = (cy - (ny // 2))
+        y2 = (cy + (ny // 2))
+        x1 = (cx - (nx // 2))
+        x2 = (cx + (nx // 2))
+    
+        if y1 < 0:
+            img = np.append(np.zeros((x, abs(y1))), img, axis=1)
+            x, y = img.shape
+            y1 = 0
+        if x1 < 0:
+            img = np.append(np.zeros((abs(x1), y)), img, axis=0)
+            x, y = img.shape
+            x1 = 0
+        if y2 > 512:
+            img = np.append(img, np.zeros((x, y2 - 512)), axis=1)
+            x, y = img.shape
+        if x2 > 512:
+            img = np.append(img, np.zeros((x2 - 512, y)), axis=0)
+    
+        slice_cropped = img[x1:x1 + nx, y1:y1 + ny]
+        if len(stack)>1:
+            RGB.append(slice_cropped)
+        
+    if len(stack)>1:
+        return np.dstack((RGB[0], RGB[1], RGB[2]))
+    else:
+        return slice_cropped
 
 
 def generator_mask(img, green_pixels):
@@ -120,7 +160,7 @@ def prepare_data(input_folder, output_file, nx, ny):
         dcmPath = os.path.join(path_seg, os.listdir(path_seg)[i])
         data_row_img = pydicom.dcmread(dcmPath)
         img = data_row_img.pixel_array
-        img = crop_or_pad_slice_to_size(img, nx, ny)
+        img = crop_or_pad_slice_to_size(img, 390, 390)
 
         green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
 
@@ -138,14 +178,14 @@ def prepare_data(input_folder, output_file, nx, ny):
             dcmPath = os.path.join(path_raw, os.listdir(path_raw)[i])
             data_row_img = pydicom.dcmread(dcmPath)
             img = data_row_img.pixel_array
-            img = crop_or_pad_slice_to_size(img, nx, ny)
+            img = crop_or_pad_slice_to_size(img, 390, 390)
             IMG_RAW.append(img)
 
             # circle
             dcmPath = os.path.join(path_cir, os.listdir(path_cir)[i])
             data_row_img = pydicom.dcmread(dcmPath)
             img = data_row_img.pixel_array
-            img = crop_or_pad_slice_to_size(img, nx, ny)
+            img = crop_or_pad_slice_to_size(img, 390, 390)
             IMG_CIR.append(img)
 
             green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
@@ -159,7 +199,7 @@ def prepare_data(input_folder, output_file, nx, ny):
                 cir_mask[cir_mask>0]=1
                 MASK_CIR.append(cir_mask)
             else:
-                MASK_CIR.append(np.zeros((nx,ny), dtype=np.uint8))
+                MASK_CIR.append(np.zeros((390,390), dtype=np.uint8))
                 
     CX = []
     CY = []
@@ -212,6 +252,13 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     cx = int(np.asarray(CX).mean())
     cy = int(np.asarray(CY).mean())
+    
+    for i in range(len(IMG_SEG)):
+        IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
+        IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
+        IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
+        MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
+        MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
     
     dt = h5py.special_dtype(vlen=str)
     hdf5_file.create_dataset('paz', (len(addrs),), dtype=dt)
@@ -275,6 +322,6 @@ if __name__ == '__main__':
     # Paths settings
     input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz1'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
-    nx = 390
-    ny = 390
+    nx = 200
+    ny = 200
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
