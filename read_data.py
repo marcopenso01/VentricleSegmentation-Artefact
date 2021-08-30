@@ -3,21 +3,15 @@ Created on Fri Aug 27 13:44:33 2021
 
 @author: Marco Penso
 """
-
 import os
 import numpy as np
-import logging
 import h5py
-from skimage import transform
-from skimage import util
-from skimage import measure
 import cv2
 from PIL import Image
 import shutil
 import png
 import itertools
 import pydicom # for reading dicom files
-import pandas as pd # for some simple data analysis (right now, just to load in the labels data and quickly reference it)
 import math as mt
 import matplotlib.pyplot as plt
 
@@ -282,7 +276,11 @@ def prepare_data(input_folder, output_file, nx, ny):
                 cir_mask[cir_mask>0]=1
                 MASK_CIR.append(cir_mask)
             else:
-                MASK_CIR.append(np.zeros((390,390), dtype=np.uint8))
+                cir_mask = np.zeros((390,390), dtype=np.uint8)
+                MASK_CIR.append(cir_mask)
+            
+            if cir_mask.max() > 3:
+                print('ERROR: max value of the cir_mask %d is %d' % (i+1, cir_mask.max()))
                 
     CX = []
     CY = []
@@ -364,6 +362,12 @@ def prepare_data(input_folder, output_file, nx, ny):
             IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
             MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
             MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
+        plt.figure()
+        plt.imshow(IMG_SEG[i])
+        plt.title('img_seg', i)
+        plt.figure()
+        plt.imshow(MASK[i])
+        plt.title('mask', i)
     
     dt = h5py.special_dtype(vlen=str)
     hdf5_file.create_dataset('paz', (len(addrs),), dtype=dt)
