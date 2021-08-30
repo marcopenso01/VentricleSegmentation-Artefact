@@ -4,6 +4,23 @@ Created on Fri Aug 27 13:44:33 2021
 @author: Marco Penso
 """
 
+import os
+import numpy as np
+import logging
+import h5py
+from skimage import transform
+from skimage import util
+from skimage import measure
+import cv2
+from PIL import Image
+import shutil
+import png
+import itertools
+import pydicom # for reading dicom files
+import pandas as pd # for some simple data analysis (right now, just to load in the labels data and quickly reference it)
+import math as mt
+import matplotlib.pyplot as plt
+
 def imfill(img):
     im_floodfill = img.copy()
     h, w = im_floodfill.shape[:2]
@@ -308,6 +325,7 @@ def prepare_data(input_folder, output_file, nx, ny):
         LEN_Y.append(len_y)
         
         '''
+        # plot crop region
         for i in range(top_left[0],bottom_right[0]+1):
             a[top_left[1]-1,i]=1
         for i in range(top_left[0],bottom_right[0]+1):
@@ -322,13 +340,30 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     cx = int(np.asarray(CX).mean())
     cy = int(np.asarray(CY).mean())
+    len_x = int(np.asarray(LEN_X).max())
+    len_y = int(np.asarray(LEN_Y).max())
+    
+    len_max = max(len_x, len_y)
     
     for i in range(len(IMG_SEG)):
-        IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
-        IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
-        IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
-        MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
-        MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
+        if len_max > nx or len_max > ny:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max, len_max, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max, len_max, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max, len_max, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max, len_max, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max, len_max, cx, cy)
+            
+            IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+            MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+        else:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
     
     dt = h5py.special_dtype(vlen=str)
     hdf5_file.create_dataset('paz', (len(addrs),), dtype=dt)
@@ -391,6 +426,6 @@ if __name__ == '__main__':
     # Paths settings
     input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz1'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
-    nx = 200
-    ny = 200
+    nx = 192
+    ny = 192
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
