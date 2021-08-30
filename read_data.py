@@ -110,7 +110,7 @@ def generator_mask(img, green_pixels):
         
         mask_myo[mask_myo>0]=2
 
-    yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 100))
+    yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 130))
     
     if len(np.argwhere(yellow_pixels)) > 5:
         
@@ -134,6 +134,62 @@ def generator_mask(img, green_pixels):
     
     return final_mask
     
+    
+def generator_mask2(img, green_pixels):
+    
+    flagENDO = False
+    flagRV = False
+    
+    size = img.shape
+    
+    yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 130))
+    
+    if len(np.argwhere(yellow_pixels)) > 5:
+        
+        flagRV = True
+    
+        mask_RV = imfill(yellow_pixels)
+        
+    else:
+        
+        mask_RV = np.zeros(size, dtype=np.uint8)
+    
+    mask_RV_MYO = imfill(green_pixels+yellow_pixels)
+    
+    mask_epi = mask_RV_MYO - mask_RV
+        
+    red_pixels = cv2.inRange(img, (110, 0, 0), (255, 100, 100))
+    
+    if len(np.argwhere(red_pixels)) > 5:
+        
+        flagENDO = True
+        
+        mask_endo = imfill(red_pixels)  #mask LV
+
+        mask_myo = mask_epi - mask_endo  #mask Myo
+        
+        mask_endo[mask_endo>0]=3
+        
+        mask_myo[mask_myo>0]=2
+    
+    if flagRV:
+        
+        mask_RV[mask_RV>0]=1
+    
+    if not flagENDO:
+        
+        mask_epi[mask_epi>0]=2
+                
+    #binary mask 0-1
+    if flagENDO:
+        final_mask = mask_endo + mask_myo
+    else:
+        final_mask = mask_epi
+    if flagRV:
+        final_mask += mask_RV
+    
+    return final_mask
+
 
 def prepare_data(input_folder, output_file, nx, ny):
     
@@ -161,15 +217,20 @@ def prepare_data(input_folder, output_file, nx, ny):
         data_row_img = pydicom.dcmread(dcmPath)
         img = data_row_img.pixel_array
         img = crop_or_pad_slice_to_size(img, 390, 390)
+        temp_img = img.copy()
+        for r in range(0, img.shape[0]):
+            for c in range(0, img.shape[1]):
+                if img[r,c,0] == img[r,c,1] == img[r,c,2]:
+                    temp_img[r,c,:]=0
 
-        green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
+        green_pixels = cv2.inRange(temp_img, (0, 110, 0), (125, 255, 125))
 
         if len(np.argwhere(green_pixels)) > 5:
 
-            final_mask = generator_mask(img, green_pixels)
+            final_mask = generator_mask(temp_img, green_pixels)
 
             if final_mask.max() > 3:
-                print('ERROR: max value of the mask %d is %d' % (i, final_mask.max()))
+                print('ERROR: max value of the mask %d is %d' % (i+1, final_mask.max()))
             MASK.append(final_mask)
             addrs.append(dcmPath)
             IMG_SEG.append(img)
@@ -187,12 +248,17 @@ def prepare_data(input_folder, output_file, nx, ny):
             img = data_row_img.pixel_array
             img = crop_or_pad_slice_to_size(img, 390, 390)
             IMG_CIR.append(img)
+            temp_img = img.copy()
+            for r in range(0, img.shape[0]):
+                for c in range(0, img.shape[1]):
+                    if img[r,c,0] == img[r,c,1] == img[r,c,2]:
+                        temp_img[r,c,:]=0
 
-            green_pixels = cv2.inRange(img, (0, 110, 0), (100, 255, 100))
-            yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 100))
+            green_pixels = cv2.inRange(temp_img, (0, 110, 0), (125, 255, 125))
+            yellow_pixels = cv2.inRange(temp_img, (110, 110, 0), (255, 255, 130))
 
             if len(np.argwhere(green_pixels)) > 5:
-                cir_mask = generator_mask(img, green_pixels)
+                cir_mask = generator_mask2(temp_img, green_pixels)
                 MASK_CIR.append(cir_mask)
             elif len(np.argwhere(yellow_pixels)) > 5:
                 cir_mask = imfill(yellow_pixels)
@@ -203,6 +269,8 @@ def prepare_data(input_folder, output_file, nx, ny):
                 
     CX = []
     CY = []
+    LEN_X = []
+    LEN_Y = []
     for ii in range(0,4):
         
         img = MASK[ii]
@@ -236,6 +304,8 @@ def prepare_data(input_folder, output_file, nx, ny):
         #print(len_x, len_y)
         CX.append(cx)
         CY.append(cy)
+        LEN_X.append(len_x)
+        LEN_Y.append(len_y)
         
         '''
         for i in range(top_left[0],bottom_right[0]+1):
