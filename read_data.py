@@ -15,12 +15,25 @@ import pydicom # for reading dicom files
 import math as mt
 import matplotlib.pyplot as plt
 
+def makefolder(folder):
+    '''
+    Helper function to make a new folder if doesn't exist
+    :param folder: path to new folder
+    :return: True if folder created, False if folder already exists
+    '''
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        return True
+    return False
+
+
 def imfill(img):
     im_floodfill = img.copy()
     h, w = im_floodfill.shape[:2]
     mask = np.zeros((h+2, w+2), np.uint8)
     cv2.floodFill(im_floodfill, mask, (0,0), 255);
     return img | cv2.bitwise_not(im_floodfill)
+
 
 def crop_or_pad_slice_to_size(slice, nx, ny):
     
