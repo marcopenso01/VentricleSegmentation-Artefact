@@ -152,7 +152,7 @@ def generator_mask2(img, green_pixels):
         
     else:
         
-        mask_RV = np.zeros(size, dtype=np.uint8)
+        mask_RV = np.zeros((size[0],size[1]), dtype=np.uint8)
     
     mask_RV_MYO = imfill(green_pixels+yellow_pixels)
     
@@ -227,7 +227,7 @@ def prepare_data(input_folder, output_file, nx, ny):
 
         if len(np.argwhere(green_pixels)) > 5:
 
-            final_mask = generator_mask(temp_img, green_pixels)
+            final_mask = generator_mask2(temp_img, green_pixels)
 
             if final_mask.max() > 3:
                 print('ERROR: max value of the mask %d is %d' % (i+1, final_mask.max()))
@@ -352,7 +352,6 @@ def prepare_data(input_folder, output_file, nx, ny):
     # After loop:
     hdf5_file.close()
     
-
 
 def load_and_maybe_process_data(input_folder,
                                 preprocessing_folder,
