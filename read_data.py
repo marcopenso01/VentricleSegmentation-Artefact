@@ -5,14 +5,10 @@ Created on Fri Aug 27 13:44:33 2021
 """
 import os
 import numpy as np
+import logging
 import h5py
 import cv2
-from PIL import Image
-import shutil
-import png
-import itertools
 import pydicom # for reading dicom files
-import math as mt
 import matplotlib.pyplot as plt
 
 def makefolder(folder):
@@ -174,6 +170,10 @@ def generator_mask2(img, green_pixels):
     
         mask_RV = imfill(yellow_pixels)
         
+        if len(np.where(yellow_pixels == 255)[0]) == len(np.where(mask_RV == 255)[0]):
+            
+            return generator_mask(img, green_pixels)
+        
     else:
         
         mask_RV = np.zeros((size[0],size[1]), dtype=np.uint8)
@@ -327,8 +327,8 @@ def prepare_data(input_folder, output_file, nx, ny):
         #print('bottom right=',bottom_right)
         cx = int((top_left[1]+bottom_right[1])/2)   #row
         cy = int((top_left[0]+bottom_right[0])/2)   #column
-        len_x = int(bottom_right[1]-top_left[1])
-        len_y = int(bottom_right[0]-top_left[0])
+        len_x = int(bottom_right[1]-top_left[1]) +5
+        len_y = int(bottom_right[0]-top_left[0]) +5
         #print(len_x, len_y)
         CX.append(cx)
         CY.append(cy)
@@ -356,13 +356,16 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     len_max = max(len_x, len_y)
     
+    print(len_max)
+    
     for i in range(len(IMG_SEG)):
-        if len_max > nx or len_max > ny:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max, len_max, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max, len_max, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max, len_max, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max, len_max, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max, len_max, cx, cy)
+        
+        if len_max >= 220:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+10, len_max+10, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+10, len_max+10, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+10, len_max+10, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+10, len_max+10, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+10, len_max+10, cx, cy)
             
             IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
@@ -370,25 +373,33 @@ def prepare_data(input_folder, output_file, nx, ny):
             MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
             MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
         else:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], 220, 220, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], 220, 220, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], 220, 220, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], 220, 220, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], 220, 220, cx, cy)
+            
+            IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+            MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+            
+        
         plt.figure()
         plt.imshow(IMG_SEG[i])
-        plt.title('img_seg', i)
+        plt.title(i)
         plt.figure()
         plt.imshow(MASK[i])
-        plt.title('mask', i)
+        plt.title(i)
     
     dt = h5py.special_dtype(vlen=str)
     hdf5_file.create_dataset('paz', (len(addrs),), dtype=dt)
     hdf5_file.create_dataset('num_img', (len(addrs),), dtype=dt)
     hdf5_file.create_dataset('mask', [len(addrs)] + [nx, ny], dtype=np.uint8)
-    hdf5_file.create_dataset('img_seg', [len(addrs)] + [nx, ny], dtype=np.uint8)
+    hdf5_file.create_dataset('img_seg', [len(addrs)] + [nx, ny, 3], dtype=np.uint8)
     hdf5_file.create_dataset('img_raw', [len(addrs)] + [nx, ny], dtype=np.float32)
-    hdf5_file.create_dataset('img_cir', [len(addrs)] + [nx, ny], dtype=np.uint8)
+    hdf5_file.create_dataset('img_cir', [len(addrs)] + [nx, ny, 3], dtype=np.uint8)
     hdf5_file.create_dataset('mask_cir', [len(addrs)] + [nx, ny], dtype=np.uint8)
 
     
@@ -427,21 +438,21 @@ def load_and_maybe_process_data(input_folder,
 
     if not os.path.exists(data_file_path):
 
-        logging.info('This configuration of mode, size and target resolution has not yet been preprocessed')
-        logging.info('Preprocessing now!')
+        print('This configuration of mode, size and target resolution has not yet been preprocessed')
+        print('Preprocessing now!')
         prepare_data(input_folder, data_file_path, nx, ny)
 
     else:
 
-        logging.info('Already preprocessed this configuration. Loading now!')
+        print('Already preprocessed this configuration. Loading now!')
 
-    return h5py.File(data_file_path, 'r')
+    #return h5py.File(data_file_path, 'r')
 
 
 if __name__ == '__main__':
 
     # Paths settings
-    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz1'
+    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz3'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
     nx = 192
     ny = 192
