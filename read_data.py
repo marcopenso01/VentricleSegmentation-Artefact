@@ -5,7 +5,6 @@ Created on Fri Aug 27 13:44:33 2021
 """
 import os
 import numpy as np
-import logging
 import h5py
 import cv2
 import pydicom # for reading dicom files
@@ -122,7 +121,21 @@ def generator_mask(img, green_pixels):
         
         flagENDO = True
         
-        mask_endo = imfill(red_pixels)  #mask LV
+        if len(np.argwhere(red_pixels)) != len(np.argwhere(imfill(red_pixels))):
+            
+            mask_endo = imfill(red_pixels)  #mask LV
+        else:
+            val = 11
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+            result = cv2.morphologyEx(red_pixels, cv2.MORPH_CLOSE, kernel)
+            while len(np.argwhere(result)) == len(np.argwhere(imfill(result))):
+                val += 2
+                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+                result = cv2.morphologyEx(red_pixels, cv2.MORPH_CLOSE, kernel)
+            mask_endo = imfill(result)
+        
+        if len(np.argwhere(green_pixels)) == len(np.argwhere(imfill(green_pixels))):
+            mask_epi = imfill(mask_endo+mask_epi)
 
         mask_myo = mask_epi - mask_endo  #mask Myo
         
@@ -188,8 +201,22 @@ def generator_mask2(img, green_pixels):
         
         flagENDO = True
         
-        mask_endo = imfill(red_pixels)  #mask LV
-
+        if len(np.argwhere(red_pixels)) != len(np.argwhere(imfill(red_pixels))):
+            
+            mask_endo = imfill(red_pixels)  #mask LV
+        else:
+            val = 11
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+            result = cv2.morphologyEx(red_pixels, cv2.MORPH_CLOSE, kernel)
+            while len(np.argwhere(result)) == len(np.argwhere(imfill(result))):
+                val += 2
+                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+                result = cv2.morphologyEx(red_pixels, cv2.MORPH_CLOSE, kernel)
+            mask_endo = imfill(result)
+        
+        if len(np.argwhere(green_pixels)) == len(np.argwhere(imfill(green_pixels))):
+            mask_epi = imfill(mask_endo+mask_epi)
+        
         mask_myo = mask_epi - mask_endo  #mask Myo
         
         mask_endo[mask_endo>0]=3
@@ -250,7 +277,13 @@ def prepare_data(input_folder, output_file, nx, ny):
         green_pixels = cv2.inRange(temp_img, (0, 110, 0), (125, 255, 125))
 
         if len(np.argwhere(green_pixels)) > 5:
-
+            '''
+            green_pixels2 = green_pixels.copy()
+            for xx in range(len(np.argwhere(green_pixels))):
+                coord = np.argwhere(green_pixels)[xx]
+                if temp_img[coord[0],coord[1],0] == temp_img[coord[0],coord[1],1]:
+                    green_pixels2[coord[0],coord[1]] = 0
+            '''
             final_mask = generator_mask2(temp_img, green_pixels)
 
             if final_mask.max() > 3:
@@ -299,9 +332,11 @@ def prepare_data(input_folder, output_file, nx, ny):
     CY = []
     LEN_X = []
     LEN_Y = []
-    for ii in range(0,4):
+    px_RV = []
+    for ii in range(0,7):
         
         img = MASK[ii]
+        px_RV.append(len(np.argwhere(img)==1))
         index = img > 0
         a = img.copy()
         a[index] = 1
@@ -348,9 +383,9 @@ def prepare_data(input_folder, output_file, nx, ny):
         plt.figure()
         plt.imshow(a)
         '''
-    
-    cx = int(np.asarray(CX).mean())
-    cy = int(np.asarray(CY).mean())
+    px_RV, CX, CY = zip(*sorted(zip(px_RV, CX, CY)))
+    cx = int(np.asarray(CX[0:3]).mean())
+    cy = int(np.asarray(CY[0:3]).mean())
     len_x = int(np.asarray(LEN_X).max())
     len_y = int(np.asarray(LEN_Y).max())
     
@@ -360,24 +395,24 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     for i in range(len(IMG_SEG)):
         
-        if len_max >= 220:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+10, len_max+10, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+10, len_max+10, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+10, len_max+10, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+10, len_max+10, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+10, len_max+10, cx, cy)
+        if len_max+20 < 230:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], 230, 230, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], 230, 230, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], 230, 230, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], 230, 230, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], 230, 230, cx, cy)
             
             IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
             MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
             MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
-        else:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], 220, 220, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], 220, 220, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], 220, 220, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], 220, 220, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], 220, 220, cx, cy)
+        elif len_max+20 >= 230:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+30, len_max+30, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+30, len_max+30, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+30, len_max+30, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+30, len_max+30, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+30, len_max+30, cx, cy)
             
             IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
@@ -452,7 +487,7 @@ def load_and_maybe_process_data(input_folder,
 if __name__ == '__main__':
 
     # Paths settings
-    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz3'
+    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz4'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
     nx = 192
     ny = 192
