@@ -10,6 +10,12 @@ import cv2
 import pydicom # for reading dicom files
 import matplotlib.pyplot as plt
 
+def rot(img, angle, interp=cv2.INTER_LINEAR):
+    rows, cols = img.shape[:2]
+    rotation_matrix = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
+    return cv2.warpAffine(img, rotation_matrix, (cols, rows), flags=interp)
+
+
 def makefolder(folder):
     '''
     Helper function to make a new folder if doesn't exist
@@ -114,6 +120,16 @@ def generator_mask(img, green_pixels):
     flagRV = False
     
     mask_epi = imfill(green_pixels)
+    
+    if len(np.argwhere(mask_epi)) == len(np.argwhere(green_pixels)):
+        val = 11
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+        result = cv2.morphologyEx(green_pixels, cv2.MORPH_CLOSE, kernel)
+        while len(np.argwhere(result)) == len(np.argwhere(imfill(result))):
+            val += 2
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+            result = cv2.morphologyEx(green_pixels, cv2.MORPH_CLOSE, kernel)
+        mask_epi = imfill(result)
         
     red_pixels = cv2.inRange(img, (110, 0, 0), (255, 100, 100))
     
@@ -147,9 +163,15 @@ def generator_mask(img, green_pixels):
     
     if len(np.argwhere(yellow_pixels)) > 5:
         
+        yellow_pixels2 = yellow_pixels.copy()
+        for xx in range(len(np.argwhere(yellow_pixels))):
+            coord = np.argwhere(yellow_pixels)[xx]
+            if img[coord[0],coord[1],0] != img[coord[0],coord[1],1]:
+                yellow_pixels2[coord[0],coord[1]] = 0
+        
         flagRV = True
 
-        temp = imfill(green_pixels + yellow_pixels)
+        temp = imfill(green_pixels + yellow_pixels2)
 
         mask_RV = temp - mask_epi
         
@@ -177,21 +199,58 @@ def generator_mask2(img, green_pixels):
     
     yellow_pixels = cv2.inRange(img, (110, 110, 0), (255, 255, 130))
     
+    #msk = np.zeros(size[0:2], dtype=np.uint8)
+    #for xx in range(len(np.argwhere(yellow_pixels))):
+    #    coord = np.argwhere(yellow_pixels)[xx]
+    #    if img[coord[0],coord[1],1] == img[coord[0],coord[1],2]:
+    #        msk[coord[0],coord[1]] = 1
+    #yellow_pixels[msk==1] = 0
+    
+    yellow_pixels2 = yellow_pixels.copy()
+    
     if len(np.argwhere(yellow_pixels)) > 5:
+        
+        for xx in range(len(np.argwhere(yellow_pixels))):
+            coord = np.argwhere(yellow_pixels)[xx]
+            if img[coord[0],coord[1],0] != img[coord[0],coord[1],1]:
+                yellow_pixels2[coord[0],coord[1]] = 0
         
         flagRV = True
     
-        mask_RV = imfill(yellow_pixels)
+        mask_RV = imfill(yellow_pixels2)
         
-        if len(np.where(yellow_pixels == 255)[0]) == len(np.where(mask_RV == 255)[0]):
+        if len(np.where(yellow_pixels2 == 255)[0]) == len(np.where(mask_RV == 255)[0]) or len(np.where(yellow_pixels2 == 255)[0])+6 >= len(np.where(mask_RV == 255)[0]):
             
-            return generator_mask(img, green_pixels)
+            mask_RV = imfill(yellow_pixels)
+            
+            if len(np.where(yellow_pixels == 255)[0]) == len(np.where(mask_RV == 255)[0]) or len(np.where(yellow_pixels == 255)[0])+6 >= len(np.where(mask_RV == 255)[0]):
+                return generator_mask(img, green_pixels)
+            else:
+                yellow_pixels2 = yellow_pixels
         
     else:
         
         mask_RV = np.zeros((size[0],size[1]), dtype=np.uint8)
     
-    mask_RV_MYO = imfill(green_pixels+yellow_pixels)
+    n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_RV)
+    if n_labels > 2:
+        val_label = np.asarray(range(n_labels))
+        area = stats[:,-1]
+        area, val_label = zip(*sorted(zip(area, val_label)))
+        for z in range(n_labels-2):
+            mask_RV[labels == val_label[z]] = 0
+    
+    mask_RV_MYO = imfill(green_pixels+yellow_pixels2)
+    
+    if len(np.argwhere(green_pixels+imfill(yellow_pixels2))) == len(np.argwhere(mask_RV_MYO)):
+        val = 11
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+        result = cv2.morphologyEx(green_pixels, cv2.MORPH_CLOSE, kernel)
+        while len(np.argwhere(result)) == len(np.argwhere(imfill(result))):
+            val += 2
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (val, val))
+            result = cv2.morphologyEx(green_pixels, cv2.MORPH_CLOSE, kernel)
+        mask_RV_MYO = imfill(result)+imfill(yellow_pixels2)
     
     mask_epi = mask_RV_MYO - mask_RV
         
@@ -277,17 +336,27 @@ def prepare_data(input_folder, output_file, nx, ny):
         green_pixels = cv2.inRange(temp_img, (0, 110, 0), (125, 255, 125))
 
         if len(np.argwhere(green_pixels)) > 5:
-            '''
+            
             green_pixels2 = green_pixels.copy()
             for xx in range(len(np.argwhere(green_pixels))):
                 coord = np.argwhere(green_pixels)[xx]
                 if temp_img[coord[0],coord[1],0] == temp_img[coord[0],coord[1],1]:
                     green_pixels2[coord[0],coord[1]] = 0
-            '''
-            final_mask = generator_mask2(temp_img, green_pixels)
+            
+            final_mask = generator_mask2(temp_img, green_pixels2)
+            
+            print(i+1, final_mask.max())
 
             if final_mask.max() > 3:
                 print('ERROR: max value of the mask %d is %d' % (i+1, final_mask.max()))
+                if final_mask.max() == 4:
+                    plt.figure()
+                    plt.imshow(final_mask)
+                    plt.title('error mask %d' % (i+1));
+                    final_mask[final_mask==4]=2
+                    plt.figure()
+                    plt.imshow(final_mask)
+                    plt.title('corrected mask %d' % (i+1));
             MASK.append(final_mask)
             addrs.append(dcmPath)
             IMG_SEG.append(img)
@@ -316,17 +385,37 @@ def prepare_data(input_folder, output_file, nx, ny):
 
             if len(np.argwhere(green_pixels)) > 5:
                 cir_mask = generator_mask2(temp_img, green_pixels)
-                MASK_CIR.append(cir_mask)
             elif len(np.argwhere(yellow_pixels)) > 5:
                 cir_mask = imfill(yellow_pixels)
                 cir_mask[cir_mask>0]=1
-                MASK_CIR.append(cir_mask)
             else:
                 cir_mask = np.zeros((390,390), dtype=np.uint8)
-                MASK_CIR.append(cir_mask)
             
             if cir_mask.max() > 3:
                 print('ERROR: max value of the cir_mask %d is %d' % (i+1, cir_mask.max()))
+                plt.figure()
+                plt.imshow(cir_mask)
+                plt.title('error circle mask %d' % (i+1));
+                temp_mask = cir_mask.copy()
+                temp_mask[cir_mask>3]=0
+                #temp_mask[cir_mask==2]=3
+                #temp_mask[cir_mask==3]=2
+                plt.figure()
+                plt.imshow(temp_mask)
+                plt.title('corrected circle mask %d' % (i+1));
+                cir_mask = temp_mask
+            MASK_CIR.append(cir_mask)
+            
+    '''
+    #rotation
+    angle = 55
+    for i in range(len(IMG_SEG)):
+        IMG_SEG[i] = rot(IMG_SEG[i], angle)
+        IMG_RAW[i] = rot(IMG_RAW[i], angle)
+        IMG_CIR[i] = rot(IMG_CIR[i], angle)
+        MASK_CIR[i] = rot(MASK_CIR[i], angle)
+        MASK[i] = rot(MASK[i], angle)
+    '''
                 
     CX = []
     CY = []
@@ -384,8 +473,8 @@ def prepare_data(input_folder, output_file, nx, ny):
         plt.imshow(a)
         '''
     px_RV, CX, CY = zip(*sorted(zip(px_RV, CX, CY)))
-    cx = int(np.asarray(CX[0:3]).mean())
-    cy = int(np.asarray(CY[0:3]).mean())
+    cx = int(np.asarray(CX[-3:]).mean())
+    cy = int(np.asarray(CY[-3:]).mean())
     len_x = int(np.asarray(LEN_X).max())
     len_y = int(np.asarray(LEN_Y).max())
     
@@ -395,7 +484,27 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     for i in range(len(IMG_SEG)):
         
-        if len_max+20 < 230:
+        if len_max+40 < nx and len_max+40 < ny:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
+        else:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+48, len_max+48, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+48, len_max+48, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+48, len_max+48, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+48, len_max+48, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+48, len_max+48, cx, cy)
+            
+            IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
+            MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+            MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
+        
+        '''
+        elif len_max+34 < 230:
             IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], 230, 230, cx, cy)
             IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], 230, 230, cx, cy)
             IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], 230, 230, cx, cy)
@@ -407,19 +516,19 @@ def prepare_data(input_folder, output_file, nx, ny):
             IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
             MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
             MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
-        elif len_max+20 >= 230:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+30, len_max+30, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+30, len_max+30, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+30, len_max+30, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+30, len_max+30, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+30, len_max+30, cx, cy)
+        elif len_max+34 >= 230:
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+34, len_max+34, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+34, len_max+34, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+34, len_max+34, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+34, len_max+34, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+34, len_max+34, cx, cy)
             
             IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_CIR[i] = cv2.resize(IMG_CIR[i], (nx, ny), interpolation=cv2.INTER_AREA)
             MASK_CIR[i] = cv2.resize(MASK_CIR[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
             MASK[i] = cv2.resize(MASK[i], (nx, ny), interpolation=cv2.INTER_NEAREST)
-            
+         '''  
         
         plt.figure()
         plt.imshow(IMG_SEG[i])
@@ -487,8 +596,9 @@ def load_and_maybe_process_data(input_folder,
 if __name__ == '__main__':
 
     # Paths settings
-    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz4'
+    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz55'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
     nx = 192
     ny = 192
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
+
