@@ -397,25 +397,24 @@ def prepare_data(input_folder, output_file, nx, ny):
                 plt.imshow(cir_mask)
                 plt.title('error circle mask %d' % (i+1));
                 temp_mask = cir_mask.copy()
-                temp_mask[cir_mask>3]=0
-                #temp_mask[cir_mask==2]=3
-                #temp_mask[cir_mask==3]=2
+                temp_mask[cir_mask>3]=2
+                #temp_mask[cir_mask==4]=2
                 plt.figure()
                 plt.imshow(temp_mask)
                 plt.title('corrected circle mask %d' % (i+1));
                 cir_mask = temp_mask
             MASK_CIR.append(cir_mask)
             
-    '''
+    
     #rotation
-    angle = 55
+    angle = 62
     for i in range(len(IMG_SEG)):
         IMG_SEG[i] = rot(IMG_SEG[i], angle)
         IMG_RAW[i] = rot(IMG_RAW[i], angle)
         IMG_CIR[i] = rot(IMG_CIR[i], angle)
         MASK_CIR[i] = rot(MASK_CIR[i], angle)
         MASK[i] = rot(MASK[i], angle)
-    '''
+    
                 
     CX = []
     CY = []
@@ -491,11 +490,12 @@ def prepare_data(input_folder, output_file, nx, ny):
             MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
             MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
         else:
-            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+48, len_max+48, cx, cy)
-            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+48, len_max+48, cx, cy)
-            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+48, len_max+48, cx, cy)
-            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+48, len_max+48, cx, cy)
-            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+48, len_max+48, cx, cy)
+            tt =48
+            IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+tt, len_max+tt, cx, cy)
+            IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+tt, len_max+tt, cx, cy)
+            IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+tt, len_max+tt, cx, cy)
+            MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], len_max+tt, len_max+tt, cx, cy)
+            MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], len_max+tt, len_max+tt, cx, cy)
             
             IMG_SEG[i] = cv2.resize(IMG_SEG[i], (nx, ny), interpolation=cv2.INTER_AREA)
             IMG_RAW[i] = cv2.resize(IMG_RAW[i], (nx, ny), interpolation=cv2.INTER_AREA)
@@ -596,9 +596,8 @@ def load_and_maybe_process_data(input_folder,
 if __name__ == '__main__':
 
     # Paths settings
-    input_folder = r'F:\ARTEFACTS\ARTEFATTI\paz55'
+    input_folder = r'F:\ARTEFACTS\SANI\paz85'
     preprocessing_folder = os.path.join(input_folder, 'pre_proc')
     nx = 192
     ny = 192
     d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
-
