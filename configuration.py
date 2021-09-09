@@ -41,8 +41,8 @@ augment_batch = True
 # Augmentation settings
 do_rotation_range = True   #random rotation in range "rg" (min,max)
 rg = (-20,20)     
-gamma = True
-prob = 1                    #Probability [0.0/1.0] (0 no augmentation, 1 always)
+gamma = True               #transforms the input image pixelwise according to the equation O = I**gamma
+prob = 1                   #Probability [0.0/1.0] (0 no augmentation, 1 always)
 
 # Paths settings (need to mount MyDrive before)
 data_root = 'F:\ARTEFACTS'      
