@@ -4,7 +4,7 @@ import os
 import socket
 import logging
 
-experiment_name = 'prova'
+experiment_name = 'test1'
 
 # Model settings Unet2D
 weight_init = 'he_normal'    # xavier_uniform/ xavier_normal/ he_normal /he_uniform /caffe_uniform/ simple/ bilinear
@@ -14,7 +14,7 @@ weight_init = 'he_normal'    # xavier_uniform/ xavier_normal/ he_normal /he_unif
 
 # Data settings
 data_mode = '2D' 
-image_size = (176, 176)   #(212,212)
+image_size = (192, 192)   #(212,212)
 target_resolution = (1, 1)
 pixel_size = (1,1) 
 nlabels = 4
@@ -26,7 +26,7 @@ z_dim = 8
 
 # Training settings
 batch_size = 4      #4 
-learning_rate = 0.0001   #unet: 0.01    enet: 0.0005
+learning_rate = 0.001   #unet: 0.01    enet: 0.0005
 optimizer_handle = tf.compat.v1.train.AdamOptimizer     #(beta1 = 0.9, beta2 = 0.999, epsilon=1e-08)
 schedule_lr = False    #decrease 10 times the LR when loss gradient lower than threshold
 weight_decay = 0  # enet:2e-4    #unet: 0.00000
@@ -35,45 +35,20 @@ momentum = None
 # 'crossentropy_and_dice (alfa,beta)'/'tversky'/'focal_tversky'
 loss_type = 'crossentropy_and_dice'
 alfa = 1     #1      
-beta = 0.2   #1      
+beta = 0.4   #1      
 augment_batch = True
 
 # Augmentation settings
 do_rotation_range = True   #random rotation in range "rg" (min,max)
-rg = (-15,15)     
-do_rotation_90 = False      #rotation 90°
-do_rotation_180 = False     #rotation 180°
-do_rotation_270 = False     #rotation 270°
-do_rotation_reshape = False #rotation of a specific 'angle' with reshape
-do_rotation = False         #rotation of a specific 'angle'
-angle = 45
-crop = False                #crops/cuts away pixels at the sides of the image
-do_fliplr = False           #Flip array in the left/right direction
-do_flipud = False           #Flip array in the up/down direction.
-RandomContrast= False       #Random change contrast of an image
-min_factor = 1.0
-max_factor = 1.0
-blurr = True               #Blurring the image with gaussian filter with random 'sigma'
-SaltAndPepper = False
-density = 0.05              #Noise density for salt and pepper noise, specified as a numeric scalar.
-Multiply = False            #Multiply all pixels in an image with a specific value (m)
-m = 1
+rg = (-20,20)     
 gamma = True
-ElasticTransformation = False #Moving pixels locally around using displacement fields.
-alpha = (0.0, 70.0)         #alpha and sigma can be a number or tuple (a, b)
-sigma = 5.0                 #If tuple a random value from range ``a <= x <= b`` will be used
-Pad = False                 #Pad image, i.e. adds columns/rows to them
-offset2 = (10,30)           #number of pixels to crop away on each side of the image (a,b)
-                            #each side will be cropped by a random amount in the range `a <= x <= b`
-  
 prob = 1                    #Probability [0.0/1.0] (0 no augmentation, 1 always)
 
 # Paths settings (need to mount MyDrive before)
-data_root = '/content/drive/My Drive/Pazienti/train2.1'      
-test_data_root = '/content/drive/My Drive/Pazieni/test2.1'
-preprocessing_folder = '/content/drive/My Drive/preproc_data'     
-project_root = '/content/drive/My Drive'                       
-log_root = os.path.join(project_root, 'acdc_logdir')
+data_root = 'F:\ARTEFACTS'      
+test_data_root = 'F:\ARTEFACTS'
+project_root = 'F:\ARTEFACTS'                       
+log_root = os.path.join(project_root, 'artefact_logdir')
 weights_root = os.path.join(log_root, experiment_name)
 
 # Pre-process settings
