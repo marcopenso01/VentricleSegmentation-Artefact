@@ -56,23 +56,19 @@ def run_training(continue_run):
 
     train_on_all_data = config.train_on_all_data
     
-    # Load data
-    data = read_data.load_and_maybe_process_data(
-        input_folder=config.data_root,
-        preprocessing_folder=config.preprocessing_folder,
-        mode=config.data_mode,
-        size=config.image_size,
-        target_resolution=config.target_resolution,
-        force_overwrite=False
-    )
+    # Load data train
+    data = h5py.File(os.path.join(config.data_root, 'train.hdf5'), 'r')
     
     # the following are HDF5 datasets, not numpy arrays
     images_train = data['images_train'][()]
     labels_train = data['masks_train'][()]
+    data.close()
 
     if not train_on_all_data:
+        data = h5py.File(os.path.join(config.data_root, 'val.hdf5'), 'r')
         images_val = data['images_val']
         labels_val = data['masks_val']
+        data.close()
         
     logging.info('Data summary:')
     logging.info(' - Training Images:')
@@ -367,8 +363,6 @@ def run_training(continue_run):
         plt.xlabel('epoch')
         plt.ylabel('learning rate')
         plt.show() 
-        
-    data.close()
 
 
 def do_eval(sess,
