@@ -66,8 +66,8 @@ def run_training(continue_run):
 
     if not train_on_all_data:
         data = h5py.File(os.path.join(config.data_root, 'val.hdf5'), 'r')
-        images_val = data['images_val']
-        labels_val = data['masks_val']
+        images_val = data['images_train']
+        labels_val = data['masks_train']
         data.close()
         
     logging.info('Data summary:')
