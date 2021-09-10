@@ -1,7 +1,7 @@
 import os.path
 from glob import glob
 import time
-import re
+
 import argparse
 import pandas as pd
 import h5py
