@@ -18,7 +18,7 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0):
     :param logits: The output of the neural network before the softmax
     :param labels: The ground truth labels in standard (i.e. not one-hot) format
     :param nlabels: The number of GT labels
-    :param loss_type: Can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/'crossentropy_and_dice'
+    :param loss_type: Can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/'crossentropy_and_dice'/'tversky_loss'/'focal_tversky_loss'
     :param weight_decay: The weight for the L2 regularisation of the network paramters
     :return: The total loss including weight decay, the loss without weight decay, only the weight decay 
     '''
