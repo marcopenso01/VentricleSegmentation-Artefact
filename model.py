@@ -65,10 +65,7 @@ def predict(images, config):
     :param inference_handle: A model function from the model zoo
     :return: A prediction mask, and the corresponding softmax output
     '''
-    if (config.experiment_name == 'unet2D_valid' or config.experiment_name == 'unet2D_same' or config.experiment_name == 'unet2D_same_mod' or config.experiment_name == 'unet2D_light' or config.experiment_name == 'Dunet2D_same_mod' or config.experiment_name == 'Dunet2D_same_mod2' or config.experiment_name == 'Dunet2D_same_mod3'):
-        logits = inference(images, config, training=tf.constant(False, dtype=tf.bool))
-    else:
-        logging.warning('invalid experiment_name!') 
+    logits = inference(images, config, training=tf.constant(False, dtype=tf.bool))
     softmax = tf.nn.softmax(logits)
     mask = tf.math.argmax(softmax, axis=-1)
 
