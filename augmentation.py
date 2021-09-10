@@ -7,12 +7,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import random
-from glob import glob
-from datetime import datetime
-from shutil import copyfile
-import imgaug as ia
-from imgaug import augmenters as iaa
-from scipy.misc import imread
 from skimage import exposure
 from PIL import Image, ImageOps, ImageEnhance
 import math
