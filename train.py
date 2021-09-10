@@ -1,19 +1,11 @@
 import os.path
 from glob import glob
 import time
-
-import argparse
-import pandas as pd
 import h5py
 import tensorflow as tf
 import shutil
 slim = tf.contrib.slim
-import glob
 import os
-
-import SimpleITK as sitk
-from multiprocessing import pool
-import pickle
 import numpy as np
 import logging
 import cv2
