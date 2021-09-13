@@ -19,8 +19,8 @@ import utils
 import read_data
 import image_utils
 
-def score_data(data, nx, ny, model_path, config, do_postprocessing=False):
-    image_size = (nx, ny)
+def score_data(input_folder, output_folder, model_path, config, do_postprocessing=False):
+    nx, ny = config.image_size[:2]
     batch_size = 1
     num_channels = config.nlabels
 
@@ -34,100 +34,100 @@ def score_data(data, nx, ny, model_path, config, do_postprocessing=False):
     with tf.Session() as sess:
 
         sess.run(init)
-        checkpoint_path = utils.get_latest_model_checkpoint_path(model_path, 'model_best_dice.ckpt')
+        nn = 'model_best_dice.ckpt'     # 'model_best_dice.ckpt'    'model_best_loss.ckpt'
+        checkpoint_path = utils.get_latest_model_checkpoint_path(model_path, nn)
         saver.restore(sess, checkpoint_path)
         init_iteration = int(checkpoint_path.split('/')[-1].split('-')[-1])
         total_time = 0
         total_volumes = 0
+        
+        if nn == 'model_best_dice.ckpt':
+            data_file_name = 'pred_on_dice.hdf5'
+        else:
+            data_file_name = 'pred_on_loss.hdf5'
+        data_file_path = os.path.join(output_folder, data_file_name)
+        out_file = h5py.File(data_file_path, "w")
+        
+        RAW = []
+        PRED = []
+        PAZ = []
+        PHS = []
+        MASK = []
+        CIR_MASK = []
 
-        for folder in sorted(os.listdir(input_folder)):
-            folder_path = os.path.join(input_folder, folder) #ciclo su cartelle paz
-            if os.path.isdir(folder_path):
-                for phase in os.listdir(folder_path):
-                    phase_path = os.path.join(folder_path, phase) #ciclo su phase ES ED
-                    img_path = os.path.join(phase_path, 'img')
+        for paz in os.listdir(input_path):
+            
+            start_time = time.time()
+            logging.info('Reading %s' % paz)
+            data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')           
+            
+            n_file = len(data['img_raw'][()])
+            for ii in range(n_file):
+                RAW.append(data['img_raw'][ii])
+                PAZ.append(paz)
+                PHS.append(data['phase'][ii])
+                if config.gt_exists:
+                    MASK.append(data['mask'][ii])
+                    CIR_MASK.append(data['mask_cir'][ii])
                     
-                    if gt_exists:
-                        mask_path = os.path.join(phase_path, 'mask')
+                img = data['img_raw'][ii].copy()
+                if config.standardize:
+                    img = image_utils.standardize_image(img)
+                if config.normalize:
+                    img = image_utils.normalize_image(img)
+        
+                # GET PREDICTION
+                feed_dict = {
+                images_pl: x,
+                }  
 
-                    start_time = time.time()
-                    predictions = []
-                    img_arr = []
-                    mask_arr = []
+                mask_out, logits_out = sess.run([mask_pl, softmax_pl], feed_dict=feed_dict)
+                prediction_cropped = np.squeeze(logits_out[0,...])
 
-                    for file in sorted(glob.glob(os.path.join(img_path, '*.png'))):  #elenco delle img
-                        
-                        img = cv2.imread(file, 0)
-                        if config.standardize:
-                            img = image_utils.standardize_image(img)
-                        if config.normalize:
-                            img = image_utils.normalize_image(img)
-                        img = cv2.resize(img, (nx, ny), interpolation = cv2.INTER_AREA)
-                        
-                        img = np.float32(img)
-                        x = image_utils.reshape_2Dimage_to_tensor(img)
-                        
-                        # GET PREDICTION
-                        feed_dict = {
-                        images_pl: x,
-                        }  
+                prediction = np.uint8(np.argmax(prediction_cropped, axis=-1))
+                
+                if do_postprocessing:
+                    prediction = image_utils.keep_largest_connected_components(prediction)
+                
+                PRED.append(prediction)
+            
+            data.close()
+            elapsed_time = time.time() - start_time
+            total_time += elapsed_time
+            total_volumes += 1 
+            logging.info('Evaluation of volume took %f secs.' % elapsed_time)
+        
+        n_file = len(PRED)
+        dt = h5py.special_dtype(vlen=str)
+        out_file.create_dataset('img_raw', [n_file] + [nx, ny], dtype=np.float32)
+        out_file.create_dataset('pred', [n_file] + [nx, ny], dtype=np.uint8)
+        out_file.create_dataset('paz', (n_file,), dtype=dt)
+        out_file.create_dataset('phase', (n_file,), dtype=dt)
+        if config.gt_exists:
+            out_file.create_dataset('mask', [len(addrs)] + [nx, ny], dtype=np.uint8)
+            out_file.create_dataset('mask_cir', [len(addrs)] + [nx, ny], dtype=np.uint8)
 
-                        mask_out, logits_out = sess.run([mask_pl, softmax_pl], feed_dict=feed_dict)
-                        prediction_cropped = np.squeeze(logits_out[0,...])
-
-                        prediction = np.uint8(np.argmax(prediction_cropped, axis=-1))
-                        predictions.append(prediction)
-                        img_arr.append(img)
-
-                    if gt_exists:
-                        for filem in sorted(glob.glob(os.path.join(mask_path, '*.png'))):
-
-                            mask = cv2.imread(filem, 0)
-                            mask = cv2.resize(mask, (nx, ny), interpolation=cv2.INTER_NEAREST)
-                            mask = np.asarray(mask, dtype=np.uint8)
-                            #y = image_utils.reshape_2Dimage_to_tensor(mask)
-                            mask_arr.append(mask)
-
-                    prediction_arr = np.transpose(np.asarray(predictions, dtype=np.uint8), (1,2,0))
-                    img_arrs = np.transpose(np.asarray(img_arr, dtype=np.float32), (1,2,0))                   
-                    if gt_exists:
-                        mask_arrs = np.transpose(np.asarray(mask_arr, dtype=np.uint8), (1,2,0))
-                    
-
-                    if do_postprocessing:
-                        prediction_arr = image_utils.keep_largest_connected_components(prediction_arr)
-
-                    elapsed_time = time.time() - start_time
-                    total_time += elapsed_time
-                    total_volumes += 1 
-                    logging.info('Evaluation of volume took %f secs.' % elapsed_time)
-
-                    # Save prediced mask
-                    out_file_name = os.path.join(output_folder, 'prediction', folder, phase)
-                    utils.makefolder(out_file_name)
-                    for zz in range(prediction_arr.shape[2]):
-                        slice_img = np.squeeze(prediction_arr[:,:,zz])
-                        cv2.imwrite(os.path.join(out_file_name, 'img' + str(zz) + '.png'), slice_img)
-
-                    # Save images
-                    image_file_name = os.path.join(output_folder, 'image', folder, phase)
-                    utils.makefolder(image_file_name)
-                    for zz in range(img_arrs.shape[2]):
-                        slice_img = np.squeeze(img_arrs[:,:,zz])
-                        cv2.imwrite(os.path.join(image_file_name, 'img' + str(zz) + '.png'), slice_img)
-                    
-                    # Save mask
-                    if gt_exists:
-                        mask_file_name = os.path.join(output_folder, 'mask', folder, phase)
-                        utils.makefolder(mask_file_name)
-                        for zz in range(mask_arrs.shape[2]):
-                            slice_img = np.squeeze(mask_arrs[:,:,zz])
-                            cv2.imwrite(os.path.join(mask_file_name, 'img' + str(zz) + '.png'), slice_img)
+        for i in range(n_file):
+            out_file['img_raw'][i, ...] = RAW[i]
+            out_file['pred'][i, ...] = PRED[i]
+            out_file['paz'][i, ...] = PAZ[i]
+            out_file['phase'][i, ...] = PHS[i]
+            if config.gt_exists:
+                out_file['mask'][i, ...] = MASK[i]
+                out_file['mask_cir'][i, ...] = CIR_MASK[i]
+        
+        #free memory
+        RAW = []
+        PRED = []
+        PAZ = []
+        PHS = []
+        MASK = []
+        CIR_MASK = []
+        
+        out_file.close()
 
         logging.info('Average time per volume: %f' % (total_time/total_volumes))
-   
-    return init_iteration
-    
+        
  
 if __name__ == '__main__':
     log_root = config.log_root
@@ -138,47 +138,13 @@ if __name__ == '__main__':
     input_path = config.test_data_root
     output_path = os.path.join(model_path, 'predictions')
     
-    for paz in os.listdir(input_path):
-      
-        logging.info('Reading %s' % paz)
-        data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')
-        
-        path_patient = os.path.join(output_path, paz)  #creo cartella paz
-        utils.makefolder(path_patient)
-        
-        data_file_name = 'prediction.hdf5'
-        data_file_path = os.path.join(path_patient, data_file_name)
-        out_file = h5py.File(data_file_path, "w")
-        
-        n_file = data['img_raw'][()].shape[0]
-        nx = data['img_raw'][()].shape[1]
-        ny = data['img_raw'][()].shape[2]
-        out_file.create_dataset('img_raw', [n_file] + [nx, ny], dtype=np.float32)
-        out_file.create_dataset('pred', [n_file] + [nx, ny], dtype=np.uint8)
-        if 'mask' in data.keys():
-            #if gt exists
-            out_file.create_dataset('mask', [len(addrs)] + [nx, ny], dtype=np.uint8)
-        if 'mask_cir' in data.keys():
-            out_file.create_dataset('mask_cir', [len(addrs)] + [nx, ny], dtype=np.uint8)
-        
-        for i in range(n_file):
-            out_file['img_raw'][i, ...] = data['img_raw'][i]
-            if 'mask' in data.keys():
-                out_file['mask'][i, ...] = data['mask'][i]
-            if 'mask_cir' in data.keys():
-                out_file['mask_cir'][i, ...] = data['mask_cir'][i]
-                
-        data.close()
-        
-        init_iteration = score_data(out_file,
-                                    nx,
-                                    ny,
-                                    model_path,
-                                    config=config,
-                                    do_postprocessing=True)
-        if config.gt_exists:
-            path_eval = os.path.join(output_path, 'eval')
-            utils.makefolder(path_eval)
-            metrics.main(path_pred, path_gt, path_eval)
-        
-        out_file.close()
+    score_data(input_path,
+               output_path,
+               model_path,
+               config=config,
+               do_postprocessing=True)
+    
+    if config.gt_exists:
+        path_eval = os.path.join(output_path, 'eval')
+        utils.makefolder(path_eval)
+        metrics.main(output_path, path_eval)
