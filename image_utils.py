@@ -27,6 +27,7 @@ def convert_to_uint8(image):
     image = 255.0*np.divide(image.astype(np.float32),image.max())
     return image.astype(np.uint8)
 
+
 def standardize_image(image):
     '''
     make image zero mean and unit standard deviation
@@ -75,20 +76,22 @@ def keep_largest_connected_components(mask):
     '''
     Keeps only the largest connected components of each label for a segmentation mask.
     '''
-    for zz in range(mask.shape[2]):
-        img = mask[:,:,zz]
-        out_img = np.zeros(img.shape, dtype=np.uint8)
-
-        for struc_id in [1, 2, 3]:
-
-            binary_img = img == struc_id
-            blobs = measure.label(binary_img, connectivity=1)
-            props = measure.regionprops(blobs)
-            if not props:
-                continue
-            area = [ele.area for ele in props]
-            largest_blob_ind = np.argmax(area)
-            largest_blob_label = props[largest_blob_ind].label
-            out_img[blobs == largest_blob_label] = struc_id
-        mask[:,:,zz] = out_img
-    return mask
+    img = mask.copy()
+    out_img = np.zeros(img.shape, dtype=np.uint8)
+    
+    for struc_id in [1, 2, 3]:
+        temp_img = np.zeros(img.shape, dtype=np.uint8)
+        binary_img = img == struc_id
+        blobs = measure.label(binary_img, connectivity=1)  #find regions
+        props = measure.regionprops(blobs)
+        if not props:
+           continue
+        area = [ele.area for ele in props]  #area of each region
+        largest_blob_ind = np.argmax(area)
+        largest_blob_label = props[largest_blob_ind].label
+        temp_img[blobs == largest_blob_label] = 255
+        if struc_id == 1 or struc_id == 3:
+            temp_img = imfill(temp_img)
+        out_img[temp_img != 0] = struc_id
+                
+    return out_img
