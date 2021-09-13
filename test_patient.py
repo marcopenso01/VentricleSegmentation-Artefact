@@ -19,7 +19,7 @@ import utils
 import read_data
 import image_utils
 
-def score_data(input_folder, output_folder, model_path, config, do_postprocessing=False):
+def score_data(input_folder, output_folder, model_path, config, do_postprocessing=False, dice=True):
     nx, ny = config.image_size[:2]
     batch_size = 1
     num_channels = config.nlabels
@@ -34,17 +34,20 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
     with tf.Session() as sess:
 
         sess.run(init)
-        nn = 'model_best_dice.ckpt'     # 'model_best_dice.ckpt'    'model_best_loss.ckpt'
+        
+        if dice:
+            nn = 'model_best_dice.ckpt'
+            data_file_name = 'pred_on_dice.hdf5'
+        else: 
+            nn = 'model_best_loss.ckpt'
+            data_file_name = 'pred_on_loss.hdf5'
+            
         checkpoint_path = utils.get_latest_model_checkpoint_path(model_path, nn)
         saver.restore(sess, checkpoint_path)
         init_iteration = int(checkpoint_path.split('/')[-1].split('-')[-1])
         total_time = 0
         total_volumes = 0
         
-        if nn == 'model_best_dice.ckpt':
-            data_file_name = 'pred_on_dice.hdf5'
-        else:
-            data_file_name = 'pred_on_loss.hdf5'
         data_file_path = os.path.join(output_folder, data_file_name)
         out_file = h5py.File(data_file_path, "w")
         
@@ -142,7 +145,8 @@ if __name__ == '__main__':
                output_path,
                model_path,
                config=config,
-               do_postprocessing=True)
+               do_postprocessing=True,
+               dice=True)
     
     if config.gt_exists:
         path_eval = os.path.join(output_path, 'eval')
