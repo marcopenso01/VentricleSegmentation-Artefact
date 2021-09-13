@@ -13,6 +13,10 @@ import seaborn as sns
 import glob
 import logging
 
+logging.basicConfig(
+    level=logging.INFO # allow DEBUG level messages to pass through the logger
+    )
+
 def conv_int(i):
     return int(i) if i.isdigit() else i
 
@@ -112,18 +116,20 @@ def print_latex_tables(df, eval_dir):
     return 0
 
 
-def compute_metrics_on_directories_raw(dir_gt, dir_pred):
+def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
     '''
     - Dice
     - Hausdorff distance
-    - Average surface distance
+    - Sens, Spec, F1
     - Predicted volume
     - Volume error w.r.t. ground truth
-    :param dir_gt: Directory of the ground truth segmentation maps.
-    :param dir_pred: Directory of the predicted segmentation maps.
     :return: Pandas dataframe with all measures in a row for each prediction and each structure
     '''
-    
+    if dice:
+        data = h5py.File(os.path.join(input_fold, 'pred_on_dice.hdf5'), 'r')
+    else:
+        data = h5py.File(os.path.join(input_fold, 'pred_on_loss.hdf5'), 'r')
+        
     cardiac_phase = []
     file_names = []
     structure_names = []
@@ -137,48 +143,39 @@ def compute_metrics_on_directories_raw(dir_gt, dir_pred):
     
     structures_dict = {1: 'RV', 2: 'Myo', 3: 'LV'}
     
-    for p_gt, p_pred in zip(sorted(os.listdir(dir_gt)), sorted(os.listdir(dir_pred))):
-        if (p_gt != p_pred):
-            raise ValueError("The two patients don't have the same name"
-                             " {}, {}.".format(p_gt, p_pred))
-        dir_p_gt = os.path.join(dir_gt, p_gt)
-        dir_p_pred = os.path.join(dir_pred, p_pred)
+    for paz in np.unique(data['paz'][:]):
+        ind = np.where(data['paz'][:] == paz)
         
-        print(p_gt)
-        
-        for phase_gt, phase_pred in zip(sorted(os.listdir(dir_p_gt)), sorted(os.listdir(dir_p_pred))):
-            if (phase_gt != phase_pred):
-                raise ValueError("The two phases don't have the same name"
-                                 " {}, {}.".format(phase_gt, phase_pred))
-            dir_ph_gt = os.path.join(dir_p_gt, phase_gt)
-            dir_ph_pred = os.path.join(dir_p_pred, phase_pred)
+        for ph in np.unique(data['phase'][:]):
             
-            pred_arr = []
-            mask_arr = []
-            for img_gt, img_pred in zip(sorted(glob.glob(os.path.join(dir_ph_gt, '*.png'))), sorted(glob.glob(os.path.join(dir_ph_pred, '*.png')))):
-                if (img_gt.split(phase_gt + '/')[1] != img_pred.split(phase_pred + '/')[1]):
-                    raise ValueError("The two images don't have the same name"
-                                     " {}, {}.".format(img_gt, img_pred))
-                    
-                gt = cv2.imread(img_gt,0)
-                pred = cv2.imread(img_pred,0)
-                if (gt.shape != pred.shape):
-                    raise ValueError("The two images don't have the same shape"
-                                     " {}, {}.".format(gt.shape, pred.shape))
-                
-                pred_arr.append(pred)
-                mask_arr.append(gt)
+            pred_arr = []  #predizione del modello
+            mask_arr = []  #ground trouth
+            cir_arr = []  #predizione circle
+            
+            for i in range(len(ind[0])):
+                if data['phase'][ind[0][i]] == ph:
+                    pred_arr.append(data['pred'][ind[0][i]])
+                    mask_arr.append(data['mask'][ind[0][i]])
+                    cir_arr.append(data['mask_cir'][ind[0][i]])
 
             pred_arr = np.transpose(np.asarray(pred_arr, dtype=np.uint8), (1,2,0))
             mask_arr = np.transpose(np.asarray(mask_arr, dtype=np.uint8), (1,2,0))
-            print(pred_arr.shape)
+            cir_arr = np.transpose(np.asarray(cir_arr, dtype=np.uint8), (1,2,0))
             
             for struc in [3,1,2]:
                 gt_binary = (mask_arr == struc) * 1
                 pred_binary = (pred_arr == struc) * 1
-
-                volpred = pred_binary.sum() * config.z_dim / 1000.
-                volgt = gt_binary.sum() * config.z_dim / 1000.
+                cir_binary = (cir_arr == struc) * 1
+                
+                #vol[ml] = n_pixel * (x_dim*y_dim) * z_dim / 1000
+                # 1 mm^3 = 0.001 ml
+                volpred = pred_binary.sum() * (1*1) * config.z_dim / 1000.
+                volgt = gt_binary.sum() * (1*1) * config.z_dim / 1000.
+            
+            
+            
+              
+            
             
                 vol_list.append(volpred)
                 vol_err_list.append(volpred - volgt)
@@ -289,14 +286,24 @@ def boxplot_metrics(df, eval_dir):
     return 0
     
 
-def main(path_pred, path_gt, eval_dir):
-    logging.info(path_gt)
+def main(path_pred):
     logging.info(path_pred)
-    logging.info(eval_dir)
     
-    if os.path.isdir(path_gt) and os.path.isdir(path_pred):
+    if os.path.exists(os.path.join(path_pred, 'pred_on_dice.hdf5')):
+        path_eval = os.path.join(path_pred, 'eval_on_dice')
+        if not os.path.exists(path_eval):
+            utils.makefolder(path_eval)
+            logging.info(path_eval)
+            df = compute_metrics_on_directories_raw(path_pred, path_eval, dice=True)
+    
+    if os.path.exists(os.path.join(path_pred, 'pred_on_loss.hdf5')):
+        path_eval = os.path.join(path_pred, 'eval_on_loss')
+        if not os.path.exists(path_eval):
+            utils.makefolder(path_eval)
+            logging.info(path_eval)
+            df = compute_metrics_on_directories_raw(path_pred, path_eval, dice=False)
         
-        df = compute_metrics_on_directories_raw(path_gt, path_pred)
+
         
         print_stats(df, eval_dir)
         print_latex_tables(df, eval_dir)
