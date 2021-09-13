@@ -19,6 +19,10 @@ import utils
 import read_data
 import image_utils
 
+logging.basicConfig(
+    level=logging.INFO # allow DEBUG level messages to pass through the logger
+    )
+
 def score_data(input_folder, output_folder, model_path, config, do_postprocessing=False, dice=True):
     nx, ny = config.image_size[:2]
     batch_size = 1
@@ -62,7 +66,7 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
             
             start_time = time.time()
             logging.info('Reading %s' % paz)
-            data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')           
+            data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')         
             
             n_file = len(data['img_raw'][()])
             for ii in range(n_file):
@@ -149,6 +153,4 @@ if __name__ == '__main__':
                dice=True)
     
     if config.gt_exists:
-        path_eval = os.path.join(output_path, 'eval')
-        utils.makefolder(path_eval)
-        metrics.main(output_path, path_eval)
+        metrics.main(output_path)
