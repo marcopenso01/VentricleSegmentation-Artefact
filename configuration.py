@@ -45,6 +45,10 @@ project_root = 'F:\ARTEFACTS'
 log_root = os.path.join(project_root, 'artefact_logdir')
 weights_root = os.path.join(log_root, experiment_name)
 
+# Pre-process settings
+standardize = False
+normalize = True
+
 # Rarely changed settings
 max_epochs = 1000
 
