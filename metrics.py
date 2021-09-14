@@ -5,7 +5,7 @@ import argparse
 import pandas as pd
 import numpy as np
 
-import scipy.stats as stats
+#import scipy.stats as stats
 import utils
 import binary_metric as bm
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ def natural_order(sord):
     return [conv_int(c) for c in re.split(r'(\d+)', sord)]
 
 
-def print_latex_tables(df, eval_dir):
+def print_latex_tables(df, eval_dir, circle=False):
     """
     Report geometric measures in latex tables to be used in the ACDC challenge paper.
     Prints mean (+- std) values for Dice for all structures.
@@ -41,8 +41,10 @@ def print_latex_tables(df, eval_dir):
     :param eval_dir:
     :return:
     """
-
-    out_file = os.path.join(eval_dir, 'latex_tables.txt')
+    if not circle:
+        out_file = os.path.join(eval_dir, 'latex_tables.txt')
+    else:
+        out_file = os.path.join(eval_dir, 'circle_latex_tables.txt')
 
     with open(out_file, "w") as text_file:
 
@@ -141,6 +143,11 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
     vol_err_list = []
     vol_gt_list = []
     
+    dices_cir_list = []
+    hausdorff_cir_list = []
+    vol_cir_list = []
+    vol_err_cir_list = []
+    
     structures_dict = {1: 'RV', 2: 'Myo', 3: 'LV'}
     
     for paz in np.unique(data['paz'][:]):
@@ -171,41 +178,61 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                 # 1 mm^3 = 0.001 ml
                 volpred = pred_binary.sum() * (1*1) * config.z_dim / 1000.
                 volgt = gt_binary.sum() * (1*1) * config.z_dim / 1000.
+                volcir = cir_binary.sum() * (1*1) * config.z_dim / 1000
             
-            
-            
-              
-            
-            
-                vol_list.append(volpred)
-                vol_err_list.append(volpred - volgt)
-                vol_gt_list.append(volgt)
+                vol_list.append(volpred)  #volume predetto CNN
+                vol_cir_list.append(volcir)  # volume predetto circle
+                vol_err_list.append(volpred - volgt)  
+                vol_err_cir_list.append(volcir -volgt)
+                vol_gt_list.append(volgt)  #volume reale
                 
                 if np.sum(gt_binary) == 0 and np.sum(pred_binary) == 0:
                     dices_list.append(1)
                     hausdorff_list.append(0)
-                elif np.sum(pred_binary) > 0 and np.sum(gt_binary) == 0 or np.sum(pred_binary) == 0 and np.sum(gt_binary) > 0:
-                    logging.warning('Structure missing in either GT (x)or prediction. HD will not be accurate.')
+                elif np.sum(pred_binary) == 0 and np.sum(gt_binary) > 0:
+                    #logging.warning('Structure missing in either GT (x)or prediction. HD will not be accurate.')
                     dices_list.append(0)
                     hausdorff_list.append(1)
-                else:
+                elif np.sum(pred_binary) != 0 and np.sum(gt_binary) != 0:
                     hausdorff_list.append(bm.hd(gt_binary, pred_binary, connectivity=1))
                     dices_list.append(bm.dc(gt_binary, pred_binary))
+                #np.sum(pred_binary) > 0 and np.sum(gt_binary) == 0
+                 
+                if np.sum(gt_binary) == 0 and np.sum(cir_binary) == 0:
+                    dices_cir_list.append(1)
+                    hausdorff_cir_list.append(0)
+                elif np.sum(cir_binary) == 0 and np.sum(gt_binary) > 0:
+                    #logging.warning('Structure missing in either GT (x)or prediction. HD will not be accurate.')
+                    dices_cir_list.append(0)
+                    hausdorff_cir_list.append(1)
+                elif np.sum(cir_binary) != 0 and np.sum(gt_binary) != 0:
+                    hausdorff_cir_list.append(bm.hd(gt_binary, cir_binary, connectivity=1))
+                    dices_cir_list.append(bm.dc(gt_binary, cir_binary))
 
-                cardiac_phase.append(phase_pred)
-                file_names.append(p_pred)
+                cardiac_phase.append(ph)
+                file_names.append(paz)
                 structure_names.append(structures_dict[struc])
-
-    df = pd.DataFrame({'dice': dices_list, 'hd': hausdorff_list,
+    
+    #CNN
+    df1 = pd.DataFrame({'dice': dices_list, 'hd': hausdorff_list,
                        'vol': vol_list, 'vol_gt': vol_gt_list, 'vol_err': vol_err_list,
-                      'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names})
+                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names)}
     
-    return df
+    #Circle
+    df2 = pd.DataFrame({'dice': dices_cir_list, 'hd': hausdorff_cir_list,
+                       'vol': vol_cir_list, 'vol_gt': vol_gt_list, 'vol_err': vol_err_cir_list,
+                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names)}
+    
+    data.close()
+    return df1, df2
     
 
-def print_stats(df, eval_dir):
+def print_stats(df, eval_dir, circle=False):
     
-    out_file = os.path.join(eval_dir, 'summary_report.txt')
+    if not circle:
+        out_file = os.path.join(eval_dir, 'summary_report.txt')
+    else:
+        out_file = os.path.join(eval_dir, 'circle_summary_report.txt')
     
     with open(out_file, "w") as text_file:
 
@@ -243,7 +270,7 @@ def print_stats(df, eval_dir):
 
 
         text_file.write('\n\n-------------------------------------------------------------------------------------\n')
-        text_file.write('Ejection fraction correlation between prediction and ground truth\n')
+        text_file.write('Correlation between prediction and ground truth\n')
         text_file.write('-------------------------------------------------------------------------------------\n\n')
 
         for struc_name in ['LV', 'RV']:
@@ -252,26 +279,35 @@ def print_stats(df, eval_dir):
 
             ED_vol = np.array(lv.loc[lv['phase'] == 'ED']['vol'])
             ES_vol = np.array(lv.loc[(lv['phase'] == 'ES')]['vol'])
-            EF_pred = (ED_vol - ES_vol) / ED_vol
+            SV_pred = ED_vol - ES_vol
+            EF_pred = SV_pred / ED_vol
 
-            ED_vol_gt = ED_vol - np.array(lv.loc[lv['phase'] == 'ED']['vol_err'])
-            ES_vol_gt = ES_vol - np.array(lv.loc[(lv['phase'] == 'ES')]['vol_err'])
+            ED_vol_gt = ED_vol - np.array(lv.loc[lv['phase'] == 'ED']['vol_gt'])
+            ES_vol_gt = ES_vol - np.array(lv.loc[(lv['phase'] == 'ES')]['vol_gt'])
+            SV_gt = ED_vol_gt - ES_vol_gt
+            EF_gt = SV_gt / ED_vol_gt
 
-            EF_gt = (ED_vol_gt - ES_vol_gt) / ED_vol_gt
+            #EF_corr, _ = stats.pearsonr(EF_pred, EF_gt)
+            EF_corr = (np.cov(EF_pred,EF_gt)[1,0] / (np.std(EF_pred) * np.std(EF_gt)) )
+            SV_corr = (np.cov(SV_pred,SV_gt)[1,0] / (np.std(SV_pred) * np.std(SV_gt)) )
+                       
+            text_file.write('{}, SV pred: {}, SV gt: {}, corr: {}\n\n'.format(struc_name, SV_pred, SV_gt, SV_corr))
+            text_file.write('{}, EF pred: {}%, EF gt: {}%, corr: {}\n\n'.format(struc_name, EF_pred*100, EF_gt*100, EF_corr))
+            
 
-            LV_EF_corr = stats.pearsonr(EF_pred, EF_gt)
-            text_file.write('{}, EF corr: {}\n\n'.format(struc_name, LV_EF_corr[0]))
 
-
-def boxplot_metrics(df, eval_dir):
+def boxplot_metrics(df, eval_dir, circle=False):
     """
     Create summary boxplots of all geometric measures.
     :param df:
     :param eval_dir:
+    :param circle: 
     :return:
     """
-
-    boxplots_file = os.path.join(eval_dir, 'boxplots.eps')
+    if not circle:
+        boxplots_file = os.path.join(eval_dir, 'boxplots.eps')
+    else:
+        boxplots_file = os.path.join(eval_dir, 'circle_boxplots.eps')
 
     fig, axes = plt.subplots(2, 1)
     fig.set_figheight(14)
@@ -294,28 +330,39 @@ def main(path_pred):
         if not os.path.exists(path_eval):
             utils.makefolder(path_eval)
             logging.info(path_eval)
-            df = compute_metrics_on_directories_raw(path_pred, path_eval, dice=True)
+            df1, df2 = compute_metrics_on_directories_raw(path_pred, path_eval, dice=True)
+            
+            print_stats(df1, path_eval, circle=False)
+            print_latex_tables(df1, path_eval, circle=False)
+            boxplot_metrics(df1, path_eval, circle=False)
+            print_stats(df2, path_eval, circle=True)
+            print_latex_tables(df2, path_eval, circle=True)
+            boxplot_metrics(df2, path_eval, circle=True)
+            
+            logging.info('------------Average Dice Figures----------')
+            logging.info('Dice 1: %f' % np.mean(df1.loc[df1['struc'] == 'LV']['dice']))
+            logging.info('Dice 2: %f' % np.mean(df1.loc[df1['struc'] == 'RV']['dice']))
+            logging.info('Dice 3: %f' % np.mean(df1.loc[df1['struc'] == 'Myo']['dice']))
+            logging.info('Mean dice: %f' % np.mean(np.mean(df1['dice'])))
+            logging.info('------------------------------------------')
     
     if os.path.exists(os.path.join(path_pred, 'pred_on_loss.hdf5')):
         path_eval = os.path.join(path_pred, 'eval_on_loss')
         if not os.path.exists(path_eval):
             utils.makefolder(path_eval)
             logging.info(path_eval)
-            df = compute_metrics_on_directories_raw(path_pred, path_eval, dice=False)
-        
-
-        
-        print_stats(df, eval_dir)
-        print_latex_tables(df, eval_dir)
-        boxplot_metrics(df, eval_dir)
-
-        logging.info('------------Average Dice Figures----------')
-        logging.info('Dice 1: %f' % np.mean(df.loc[df['struc'] == 'LV']['dice']))
-        logging.info('Dice 2: %f' % np.mean(df.loc[df['struc'] == 'RV']['dice']))
-        logging.info('Dice 3: %f' % np.mean(df.loc[df['struc'] == 'Myo']['dice']))
-        logging.info('Mean dice: %f' % np.mean(np.mean(df['dice'])))
-        logging.info('------------------------------------------')
-    
-    else:
-        raise ValueError(
-            "The paths given needs to be two directories or two files.")
+            df1, df2 = compute_metrics_on_directories_raw(path_pred, path_eval, dice=False)
+            
+            print_stats(df1, path_eval, circle=False)
+            print_latex_tables(df1, path_eval, circle=False)
+            boxplot_metrics(df1, path_eval, circle=False)
+            print_stats(df2, path_eval, circle=True)
+            print_latex_tables(df2, path_eval, circle=True)
+            boxplot_metrics(df2, path_eval, circle=True)
+            
+            logging.info('------------Average Dice Figures----------')
+            logging.info('Dice 1: %f' % np.mean(df1.loc[df1['struc'] == 'LV']['dice']))
+            logging.info('Dice 2: %f' % np.mean(df1.loc[df1['struc'] == 'RV']['dice']))
+            logging.info('Dice 3: %f' % np.mean(df1.loc[df1['struc'] == 'Myo']['dice']))
+            logging.info('Mean dice: %f' % np.mean(np.mean(df1['dice'])))
+            logging.info('------------------------------------------')
