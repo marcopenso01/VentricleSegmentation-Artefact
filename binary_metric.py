@@ -3,7 +3,7 @@ from scipy.ndimage import _ni_support
 from scipy.ndimage.morphology import distance_transform_edt, binary_erosion,\
     generate_binary_structure
 from scipy.ndimage.measurements import label, find_objects
-from scipy.stats import pearsonr
+#from scipy.stats import pearsonr
 
 # own modules
 # Compare two binary objects
@@ -24,6 +24,14 @@ from scipy.stats import pearsonr
 # TP
 # FN
 
+def pearsonr(data1, data2):
+    """
+    The Pearson correlation coefficient 
+    
+    Computes the the strength of the linear relationship between two data samples.
+    """
+    return (numpy.cov(data1,data2)[1,0] / (numpy.std(data1) * numpy.std(data2)) )
+    
 # code
 def dc(result, reference):
     r"""
