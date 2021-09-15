@@ -218,7 +218,7 @@ def dense_block(bottom,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name=name+'_layer0_drop0', training)
+    x = dropout_layer(x, name+'_layer0_drop0', training)
     
     x = batch_normalisation_layer(bottom, name+'_layer0_bn1', training)
     x = activation(x)
@@ -231,7 +231,7 @@ def dense_block(bottom,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name=name+'_layer0_drop1', training)
+    x = dropout_layer(x, name+'_layer0_drop1', training)
         
     concat_feat = tf.concat([bottom, x], axis=-1)
     
@@ -248,7 +248,7 @@ def dense_block(bottom,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = dropout_layer(x, name=name+'_layer'+str(i)+'_drop0', training)
+        x = dropout_layer(x, name+'_layer'+str(i)+'_drop0', training)
         
         x = batch_normalisation_layer(x, name+'_layer'str(i)+'_bn1', training)
         x = activation(x)
@@ -261,7 +261,7 @@ def dense_block(bottom,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = dropout_layer(x, name=name+'_layer'+str(i)+'_drop1', training)
+        x = dropout_layer(x, name+'_layer'+str(i)+'_drop1', training)
         
         concat_feat = tf.concat([concat_feat, x], axis=-1)
 
@@ -291,7 +291,7 @@ def transition_layer(bottom,
                      padding="SAME",
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name=name+'_drop', training)
+    x = dropout_layer(x, name+'_drop', training)
     
     if pool==0:
         x = avg_pool_layer2d(x)
