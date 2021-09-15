@@ -14,7 +14,7 @@ import glob
 import utils
 import image_utils
 import model as model
-import read_data
+#import read_data
 import configuration as config
 import augmentation as aug
 from background_generator import BackgroundGenerator
@@ -59,8 +59,8 @@ def run_training(continue_run):
 
     if not train_on_all_data:
         data = h5py.File(os.path.join(config.data_root, 'val.hdf5'), 'r')
-        images_val = data['images_train']
-        labels_val = data['masks_train']
+        images_val = data['images_train'][()]
+        labels_val = data['masks_train'][()]
         data.close()
         
     logging.info('Data summary:')
