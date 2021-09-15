@@ -210,7 +210,7 @@ def dense_block(bottom,
     x = batch_normalisation_layer(bottom, name+'_layer0_bn0', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
-                     name=name+'layer0_1x1'),
+                     name=name+'layer0_1x1',
                      kernel_size=(1,1),
                      num_filters=128,
                      strides=strides,
@@ -223,7 +223,7 @@ def dense_block(bottom,
     x = batch_normalisation_layer(bottom, name+'_layer0_bn1', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
-                     name=name+'layer0_3x3'),
+                     name=name+'layer0_3x3',
                      kernel_size=kernel_size,
                      num_filters=growth_rate,
                      strides=strides,
@@ -237,7 +237,7 @@ def dense_block(bottom,
     
     for i in range(1, n_layers):
         
-        x = batch_normalisation_layer(concat_feat, name+'_layer'str(i)+'_bn0', training)
+        x = batch_normalisation_layer(concat_feat, name+'_layer'+str(i)+'_bn0', training)
         x = activation(x)
         x = conv2D_layer(bottom=x,
                          name=name+'_layer'+str(i)+'_1x1',
@@ -250,7 +250,7 @@ def dense_block(bottom,
                          add_bias=False)
         x = dropout_layer(x, name+'_layer'+str(i)+'_drop0', training)
         
-        x = batch_normalisation_layer(x, name+'_layer'str(i)+'_bn1', training)
+        x = batch_normalisation_layer(x, name+'_layer'+str(i)+'_bn1', training)
         x = activation(x)
         x = conv2D_layer(bottom=x,
                          name=name+'_layer'+str(i)+'_3x3',
@@ -283,7 +283,7 @@ def transition_layer(bottom,
     x = batch_normalisation_layer(bottom, name+'_bn', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
-                     name=name+'_conv'),
+                     name=name+'_conv',
                      kernel_size=(1,1),
                      num_filters=num_filters,
                      strides=(1,1),
@@ -563,7 +563,6 @@ def selective_kernel_block(bottom,
                            name, 
                            training,
                            num_filters=32,
-                           activation=tf.nn.relu,
                            kernel_size=(3,3),
                            strides=(1,1),
                            activation=tf.nn.relu,
@@ -588,7 +587,7 @@ def selective_kernel_block(bottom,
     for i in range(M):
         
         net = conv2D_dilated_layer_bn(bottom=x,
-                                      name=name'_dil'+str(i),
+                                      name=name+'_dil'+str(i),
                                       training=training,
                                       kernel_size=kernel_size,
                                       num_filters=input_feature,
@@ -609,7 +608,7 @@ def selective_kernel_block(bottom,
     
     fc = dense_layer(bottom=gap,
                      name=name+'_fc',
-                     hidden_units=d
+                     hidden_units=d,
                      activation=tf.identity,
                      weight_init=weight_init,
                      add_bias=False)
@@ -622,7 +621,7 @@ def selective_kernel_block(bottom,
         
         fcs = dense_layer(bottom=act,
                           name=name+'_fc'+str(i),
-                          hidden_units=input_feature
+                          hidden_units=input_feature,
                           activation=tf.identity,
                           weight_init=weight_init,
                           add_bias=False)
@@ -680,14 +679,14 @@ def channel_attention(bottom,
     
     avg_pool = dense_layer(bottom=avg_pool,
                            name=name+'_mpl0',
-                           hidden_units=channel//ratio
+                           hidden_units=channel//ratio,
                            activation=activation,
                            weight_init=weight_init,
                            add_bias=False)
     
     avg_pool = dense_layer(bottom=avg_pool,
                            name=name+'_mpl1',
-                           hidden_units=channel
+                           hidden_units=channel,
                            activation=activation,
                            weight_init=weight_init,
                            add_bias=False)
@@ -696,14 +695,14 @@ def channel_attention(bottom,
     
     max_pool = dense_layer(bottom=max_pool,
                            name=name+'_mpl2',
-                           hidden_units=channel//ratio
+                           hidden_units=channel//ratio,
                            activation=activation,
                            weight_init=weight_init,
                            add_bias=False)
     
     max_pool = dense_layer(bottom=max_pool,
                            name=name+'_mpl3',
-                           hidden_units=channel
+                           hidden_units=channel,
                            activation=activation,
                            weight_init=weight_init,
                            add_bias=False)
@@ -1191,9 +1190,7 @@ def _bilinear_upsample_weights(shape):
     num_feature_maps = shape[2]
 
     weights = np.zeros(shape, dtype=np.float32)
-    upsample_kernel = 
-    
-    (kernel_size)
+    upsample_kernel = _upsample_filt(kernel_size)
 
     for i in range(num_feature_maps):
         weights[:, :, i, i] = upsample_kernel
