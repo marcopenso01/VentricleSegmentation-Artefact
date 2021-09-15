@@ -142,7 +142,7 @@ def run_training(continue_run):
 
         saver = tf.train.Saver(max_to_keep=max_to_keep)
         saver_best_dice = tf.train.Saver()
-        saver_best_xent = tf.train.Saver()
+        saver_best_loss = tf.train.Saver()
 
         # Create a session for running Ops on the Graph.
         configP = tf.ConfigProto()
