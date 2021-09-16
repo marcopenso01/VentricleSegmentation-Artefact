@@ -217,51 +217,51 @@ def net1(images, training, nlabels):
     pool1 = layers.max_pool_layer2d(select1)
     
     select2 = layers.selective_kernel_block(pool1, 'select2', num_filters=48, training=training)
-    dens2 = layer.dense_block(select2, 'dens2', growth_rate=16, n_layers=2, training=training)
+    dens2 = layers.dense_block(select2, 'dens2', growth_rate=16, n_layers=2, training=training)
     
     trans2 = layers.transition_layer(dens2, 'trans2', num_filters=48, pool=1, training=training)
     
     select3 = layers.selective_kernel_block(trans2, 'select3', num_filters=96, training=training)
-    dens3 = layer.dense_block(select3, 'dens3', growth_rate=16, n_layers=3, training=training)
+    dens3 = layers.dense_block(select3, 'dens3', growth_rate=16, n_layers=3, training=training)
     
     trans3 = layers.transition_layer(dens3, 'trans3', num_filters=96, pool=1, training=training)
     
     select4 = layers.selective_kernel_block(trans3, 'select4', num_filters=192, training=training)
-    dens4 = layer.dense_block(select4, 'dens4', growth_rate=16, n_layers=4, training=training)
+    dens4 = layers.dense_block(select4, 'dens4', growth_rate=16, n_layers=4, training=training)
     
     trans4 = layers.transition_layer(dens4, 'trans4', num_filters=192, pool=1, training=training)
     
     #bridge
-    b1 = layer.conv2D_layer_bn(trans4, 'b1', num_filters=384, training=training)
-    cbam = layer.conv_block_att_module(b1, 'cbam')
-    b2 = layer.conv2D_layer_bn(cbam, 'b2', num_filters=384, training=training)
+    b1 = layers.conv2D_layer_bn(trans4, 'b1', num_filters=384, training=training)
+    cbam = layers.conv_block_att_module(b1, 'cbam')
+    b2 = layers.conv2D_layer_bn(cbam, 'b2', num_filters=384, training=training)
     
     #decoder    
     up4 = layers.Upsample(b2)
     
-    att4 = layer.spatial_attention(dens4, 'att4')
-    proj4 = layer.projection(att4, 'proj4', num_filters=192)
+    att4 = layers.spatial_attention(dens4, 'att4')
+    proj4 = layers.projection(att4, 'proj4', num_filters=192)
     c4 = tf.concat([proj4, up4], axis=3, name='c4')
     conv4= layers.conv2D_layer_bn(c4, 'conv4', num_filters=192, training=training)
     
     up3 = layers.Upsample(conv4)
     
-    att3 = layer.spatial_attention(dens3, 'att3')
-    proj3 = layer.projection(att3, 'proj3', num_filters=96)
+    att3 = layers.spatial_attention(dens3, 'att3')
+    proj3 = layers.projection(att3, 'proj3', num_filters=96)
     c3 = tf.concat([proj3, up3], axis=3, name='c3')
     conv3= layers.conv2D_layer_bn(c3, 'conv3', num_filters=96, training=training)
     
     up2 = layers.Upsample(conv3)
     
-    att2 = layer.spatial_attention(dens2, 'att2')
-    proj2 = layer.projection(att2, 'proj2', num_filters=48)
+    att2 = layers.spatial_attention(dens2, 'att2')
+    proj2 = layers.projection(att2, 'proj2', num_filters=48)
     c2 = tf.concat([proj2, up2], axis=3, name='c2')
     conv2= layers.conv2D_layer_bn(c2, 'conv2', num_filters=48, training=training)
     
     up1 = layers.Upsample(conv2)
     
-    att1 = layer.spatial_attention(select1, 'att1')
-    proj1 = layer.projection(att1, 'proj1', num_filters=32)
+    att1 = layers.spatial_attention(select1, 'att1')
+    proj1 = layers.projection(att1, 'proj1', num_filters=32)
     c1 = tf.concat([proj1, up1], axis=3, name='c1')
     conv1= layers.conv2D_layer_bn(c1, 'conv1', num_filters=32, training=training)
     
