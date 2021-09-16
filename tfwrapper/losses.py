@@ -106,7 +106,7 @@ def tversky_loss(logits, labels, epsilon=1e-10, only_foreground=False, sum_over_
 
 def focal_tversky_loss(logits, labels, epsilon=1e-10, only_foreground=False, sum_over_batches=False):
     
-    val = tversky_loss(logists, labels, only_foreground=only_foreground)
+    val = tversky_loss(logits, labels, only_foreground=only_foreground)
     gamma = 0.75
     return tf.math.pow(val, gamma)
     
