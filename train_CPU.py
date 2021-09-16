@@ -319,21 +319,22 @@ def run_training(continue_run):
                 step += 1
                 
             # end epoch
-            lr_history.append(curr_lr)
-            sum_dice = 0
-            sum_loss = 0
-            for i in range(len(train_temp)):
-                sum_loss += train_temp[i][0]
-                sum_dice += train_temp[i][1]
-            train_loss_history.append(sum_loss/len(train_temp))
-            train_dice_history.append(sum_dice/len(train_temp))
-            sum_dice = 0
-            sum_loss = 0
-            for i in range(len(val_temp)):
-                sum_loss += val_temp[i][0]
-                sum_dice += val_temp[i][1]
-            val_loss_history.append(sum_loss/len(val_temp))
-            val_dice_history.append(sum_dice/len(val_temp))
+            if len(train_temp!)=0: 
+                lr_history.append(curr_lr)
+                sum_dice = 0
+                sum_loss = 0
+                for i in range(len(train_temp)):
+                    sum_loss += train_temp[i][0]
+                    sum_dice += train_temp[i][1]
+                train_loss_history.append(sum_loss/len(train_temp))
+                train_dice_history.append(sum_dice/len(train_temp))
+                sum_dice = 0
+                sum_loss = 0
+                for i in range(len(val_temp)):
+                    sum_loss += val_temp[i][0]
+                    sum_dice += val_temp[i][1]
+                val_loss_history.append(sum_loss/len(val_temp))
+                val_dice_history.append(sum_dice/len(val_temp))
             
         sess.close()
         
