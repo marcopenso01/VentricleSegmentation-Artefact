@@ -319,7 +319,7 @@ def run_training(continue_run):
                 step += 1
                 
             # end epoch
-            if len(train_temp!)=0: 
+            if len(train_temp)!=0: 
                 lr_history.append(curr_lr)
                 sum_dice = 0
                 sum_loss = 0
