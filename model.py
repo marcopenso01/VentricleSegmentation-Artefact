@@ -1,10 +1,7 @@
-import tensorflow as tf
-from tfwrapper import losses
 import configuration as config
+from tfwrapper import losses
+
 slim = tf.contrib.slim
-import model_structure
-import logging
-import tensorflow.examples.tutorials.mnist
 
 
 def inference(images, config, training):
