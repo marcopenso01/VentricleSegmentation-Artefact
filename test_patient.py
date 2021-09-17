@@ -1,23 +1,16 @@
-import os
-import glob
-import numpy as np
 import logging
-import cv2
-import h5py
-
-import argparse
-import metrics
+import os
 import time
-from importlib.machinery import SourceFileLoader
+
+import h5py
+import numpy as np
 import tensorflow as tf
-from skimage import transform
-import matplotlib.pyplot as plt
 
 import configuration as config
+import image_utils
+import metrics
 import model as model
 import utils
-import read_data
-import image_utils
 
 logging.basicConfig(
     level=logging.INFO # allow DEBUG level messages to pass through the logger
