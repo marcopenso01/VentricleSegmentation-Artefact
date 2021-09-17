@@ -1,8 +1,6 @@
-import model_structure
-import tensorflow as tf
 import os
-import socket
-import logging
+import tensorflow as tf
+import model_structure
 
 experiment_name = 'test1'
 
