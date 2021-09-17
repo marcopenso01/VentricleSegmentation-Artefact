@@ -1,21 +1,15 @@
 import logging
 import os
 import os.path
-import time
-import shutil
-import tensorflow as tf
-import numpy as np
-import cv2
+import logging
 import random
-from skimage import exposure
-from PIL import Image, ImageOps, ImageEnhance
-import math
-from math import floor, ceil
-import scipy.ndimage
 
-import utils
-import image_utils
+import cv2
+import numpy as np
+from skimage import exposure
+
 import configuration as config
+import image_utils
 
 def augmentation_function(images, labels):
     '''
