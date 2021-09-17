@@ -1,7 +1,5 @@
-import tensorflow as tf
-import configuration as config
 from tfwrapper import layers
-from tensorflow.contrib.layers.python.layers import initializers
+
 slim = tf.contrib.slim
 import logging
 
