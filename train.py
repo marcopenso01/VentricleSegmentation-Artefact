@@ -9,7 +9,7 @@ import os
 import numpy as np
 import logging
 import glob
-
+import matplotlib.pyplot as plt
 import utils
 import model as model
 #import read_data
