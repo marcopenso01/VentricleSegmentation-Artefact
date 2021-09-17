@@ -1,17 +1,17 @@
-import os
-from glob import glob
-import re
-import argparse
-import pandas as pd
-import numpy as np
-
-#import scipy.stats as stats
-import utils
-import binary_metric as bm
-import matplotlib.pyplot as plt
-import seaborn as sns
-import glob
 import logging
+import os
+import re
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+import binary_metric as bm
+import configuration as config
+# import scipy.stats as stats
+import utils
 
 logging.basicConfig(
     level=logging.INFO # allow DEBUG level messages to pass through the logger
@@ -216,12 +216,12 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
     #CNN
     df1 = pd.DataFrame({'dice': dices_list, 'hd': hausdorff_list,
                        'vol': vol_list, 'vol_gt': vol_gt_list, 'vol_err': vol_err_list,
-                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names)}
+                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names})
     
     #Circle
     df2 = pd.DataFrame({'dice': dices_cir_list, 'hd': hausdorff_cir_list,
                        'vol': vol_cir_list, 'vol_gt': vol_gt_list, 'vol_err': vol_err_cir_list,
-                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names)}
+                       'phase': cardiac_phase, 'struc': structure_names, 'filename': file_names})
     
     data.close()
     return df1, df2
