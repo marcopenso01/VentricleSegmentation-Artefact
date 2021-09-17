@@ -1,24 +1,21 @@
-import os.path
-from glob import glob
 import time
+from glob import glob
+
 import h5py
 import tensorflow as tf
-import shutil
+
 slim = tf.contrib.slim
 import os
 import numpy as np
 import logging
-import cv2
 import glob
 
 import utils
-import image_utils
 import model as model
 #import read_data
 import configuration as config
 import augmentation as aug
 from background_generator import BackgroundGenerator
-import model_structure as model_structure
 
 
 logging.basicConfig(
