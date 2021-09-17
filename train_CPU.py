@@ -29,7 +29,10 @@ logging.basicConfig(
 log_dir = os.path.join(config.log_root, config.experiment_name)
 
 def run_training(continue_run):
-
+    print_txt(log_dir, ['\nTensorFlow version: %s' % tf.__version__])
+    if not version.parse(tf.__version__).release[0] >= 2:
+        print_txt(log_dir, ['\nAssertionError: This notebook requires TensorFlow 2.0 or above.'])
+        raise AssertionError('This notebook requires TensorFlow 2.0 or above.')
     print_txt(log_dir, ['\nEXPERIMENT NAME: %s' % config.experiment_name])
 
     init_step = 0
