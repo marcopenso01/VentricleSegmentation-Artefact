@@ -213,74 +213,118 @@ def net1(images, training, nlabels):
 
     #encoder
     select1 = layers.selective_kernel_block(images, 'select1', num_filters=32, training=training)
+    print('select1', select1.shape)
     
     pool1 = layers.max_pool_layer2d(select1)
+    print('pool1', pool1.shape)
     
     select2 = layers.selective_kernel_block(pool1, 'select2', num_filters=48, training=training)
+    print('select2', select2.shape)
     dens2 = layers.dense_block(select2, 'dens2', growth_rate=16, n_layers=2, training=training)
+    print('dens2', dens2.shape)
     
     trans2 = layers.transition_layer(dens2, 'trans2', num_filters=48, pool=1, training=training)
+    print('trans2', trans2.shape)
     
     select3 = layers.selective_kernel_block(trans2, 'select3', num_filters=96, training=training)
+    print('select3', select3.shape)
     dens3 = layers.dense_block(select3, 'dens3', growth_rate=16, n_layers=3, training=training)
+    print('dens3', dens3.shape)
     
     trans3 = layers.transition_layer(dens3, 'trans3', num_filters=96, pool=1, training=training)
+    print('trans3', trans3.shape)
     
     select4 = layers.selective_kernel_block(trans3, 'select4', num_filters=192, training=training)
+    print('select4', select4.shape)
     dens4 = layers.dense_block(select4, 'dens4', growth_rate=16, n_layers=4, training=training)
+    print('dens4', dens4.shape)
     
     trans4 = layers.transition_layer(dens4, 'trans4', num_filters=192, pool=1, training=training)
+    print('trans4', trans4.shape)
     
     #bridge
     b1 = layers.conv2D_layer_bn(trans4, 'b1', num_filters=384, training=training)
+    print('b1', b1.shape)
     cbam = layers.conv_block_att_module(b1, 'cbam')
+    print('cbam', cbam.shape)
     b2 = layers.conv2D_layer_bn(cbam, 'b2', num_filters=384, training=training)
+    print('b2', b2.shape)
     
     #decoder    
     up4 = layers.Upsample(b2)
+    print('up4', up4.shape)
     
     att4 = layers.spatial_attention(dens4, 'att4')
+    print('att4', att4.shape)
     proj4 = layers.projection(att4, 'proj4', num_filters=192)
+    print('proj4', proj4.shape)
     c4 = tf.concat([proj4, up4], axis=3, name='c4')
+    print('c4', c4.shape)
     conv4= layers.conv2D_layer_bn(c4, 'conv4', num_filters=192, training=training)
+    print('conv4', conv4.shape)
     
     up3 = layers.Upsample(conv4)
+    print('up3', up3.shape)
     
     att3 = layers.spatial_attention(dens3, 'att3')
+    print('att3', att3.shape)
     proj3 = layers.projection(att3, 'proj3', num_filters=96)
+    print('proj3', proj3.shape)
     c3 = tf.concat([proj3, up3], axis=3, name='c3')
+    print('c3', c3.shape)
     conv3= layers.conv2D_layer_bn(c3, 'conv3', num_filters=96, training=training)
+    print('conv3', conv3.shape)
     
     up2 = layers.Upsample(conv3)
+    print('up2', up2.shape)
     
     att2 = layers.spatial_attention(dens2, 'att2')
+    print('att2', att2.shape)
     proj2 = layers.projection(att2, 'proj2', num_filters=48)
+    print('proj2', proj2.shape)
     c2 = tf.concat([proj2, up2], axis=3, name='c2')
+    print('c2', c2.shape)
     conv2= layers.conv2D_layer_bn(c2, 'conv2', num_filters=48, training=training)
+    print('conv2', conv2.shape)
     
     up1 = layers.Upsample(conv2)
+    print('up1', up1.shape)
     
     att1 = layers.spatial_attention(select1, 'att1')
+    print('att1', att1.shape)
     proj1 = layers.projection(att1, 'proj1', num_filters=32)
+    print('proj1', proj1.shape)
     c1 = tf.concat([proj1, up1], axis=3, name='c1')
+    print('c1', c1.shape)
     conv1= layers.conv2D_layer_bn(c1, 'conv1', num_filters=32, training=training)
+    print('conv1', conv1.shape)
     
     #deep supervision
     up3d = layers.Upsample(conv4)
+    print('up3d', up3d.shape)
     conv3d = layers.conv2D_layer_bn(up3d, 'conv3d', num_filters=96, kernel_size=(1,1), training=training)
+    print('conv3d', conv3d.shape)
     
     sum3 = tf.add(conv3d, conv3)
+    print('sum3', sum3.shape)
     
     up2d = layers.Upsample(sum3)
+    print('up2d', up2d.shape)
     conv2d = layers.conv2D_layer_bn(up2d, 'conv2d', num_filters=48, kernel_size=(1,1), training=training)
+    print('conv2d', conv2d.shape)
     
     sum2 = tf.add(conv2d, conv2)
+    print('sum2', sum2.shape)
     
     up1d = layers.Upsample(sum2)
+    print('up1d', up1d.shape)
     conv1d = layers.conv2D_layer_bn(up1d, 'conv1d', num_filters=32, kernel_size=(1,1), training=training)
+    print('conv1d', conv1d.shape)
     
     sum1 = tf.add(conv1d, conv1)
+    print('sum1', sum1.shape)
 
     pred = layers.conv2D_layer_bn(sum1, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
+    print('pred', pred.shape)
     
     return pred
