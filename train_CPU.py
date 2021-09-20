@@ -1,25 +1,23 @@
 import os.path
-from glob import glob
+import shutil
 import time
+from glob import glob
+
 import h5py
 import tensorflow as tf
-import shutil
-slim = tf.contrib.slim
+
 import os
 import numpy as np
 import logging
-import cv2
 import glob
 import matplotlib.pyplot as plt
-
 import utils
-import image_utils
 import model as model
 #import read_data
 import configuration as config
 import augmentation as aug
 from background_generator import BackgroundGenerator
-import model_structure as model_structure
+from packaging import version
 
 
 logging.basicConfig(
@@ -28,11 +26,12 @@ logging.basicConfig(
 
 log_dir = os.path.join(config.log_root, config.experiment_name)
 
-def run_training(continue_run):
-    print_txt(log_dir, ['\nTensorFlow version: %s' % tf.__version__])
+print_txt(log_dir, ['\nTensorFlow version: %s' % tf.__version__])
     if not version.parse(tf.__version__).release[0] >= 2:
         print_txt(log_dir, ['\nAssertionError: This notebook requires TensorFlow 2.0 or above.'])
         raise AssertionError('This notebook requires TensorFlow 2.0 or above.')
+
+def run_training(continue_run):
     print_txt(log_dir, ['\nEXPERIMENT NAME: %s' % config.experiment_name])
 
     init_step = 0
@@ -91,11 +90,11 @@ def run_training(continue_run):
         image_tensor_shape = [config.batch_size] + list(config.image_size) + [1]
         mask_tensor_shape = [config.batch_size] + list(config.image_size)
 
-        images_pl = tf.placeholder(tf.float32, shape=image_tensor_shape, name='images')
-        labels_pl = tf.placeholder(tf.uint8, shape=mask_tensor_shape, name='labels')
+        images_pl = tf.compat.v1.placeholder(tf.float32, shape=image_tensor_shape, name='images')
+        labels_pl = tf.compat.v1.placeholder(tf.uint8, shape=mask_tensor_shape, name='labels')
 
-        learning_rate_pl = tf.placeholder(tf.float32, shape=[])
-        training_pl = tf.placeholder(tf.bool, shape=[])
+        learning_rate_pl = tf.compat.v1.placeholder(tf.float32, shape=[])
+        training_pl = tf.compat.v1.placeholder(tf.bool, shape=[])
 
         tf.summary.scalar('learning_rate', learning_rate_pl)
 
@@ -135,10 +134,10 @@ def run_training(continue_run):
                                      loss_type=config.loss_type)
 
         # Build the summary Tensor based on the TF collection of Summaries.
-        summary = tf.summary.merge_all()
+        summary = tf.compat.v1.summary.merge_all()
 
         # Add the variable initializer Op.
-        init = tf.global_variables_initializer()
+        init = tf.compat.v1.global_variables_initializer()
 
         # Create a saver for writing training checkpoints.
 
@@ -147,36 +146,36 @@ def run_training(continue_run):
         else:
             max_to_keep = 5
 
-        saver = tf.train.Saver(max_to_keep=max_to_keep)
-        saver_best_dice = tf.train.Saver()
-        saver_best_loss = tf.train.Saver()
+        saver = tf.compat.v1.train.Saver(max_to_keep=max_to_keep)
+        saver_best_dice = tf.compat.v1.train.Saver()
+        saver_best_loss = tf.compat.v1.train.Saver()
 
         # Create a session for running Ops on the Graph.
-        configP = tf.ConfigProto()
+        configP = tf.compat.v1.ConfigProto()
         configP.gpu_options.allow_growth = True  # Do not assign whole gpu memory, just use it on the go
         configP.allow_soft_placement = True  # If a operation is not define it the default device, let it execute in another.
-        sess = tf.Session(config=configP)
-
+        sess = tf.compat.v1.Session(config=configP)
+        
         # Instantiate a SummaryWriter to output summaries and the Graph.
-        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+        summary_writer = tf.compat.v1.summary.FileWriter(log_dir, sess.graph)
 
         # with tf.name_scope('monitoring'):
 
-        val_error_ = tf.placeholder(tf.float32, shape=[], name='val_error')
-        val_error_summary = tf.summary.scalar('validation_loss', val_error_)
+        val_error_ = tf.compat.v1.placeholder(tf.float32, shape=[], name='val_error')
+        val_error_summary = tf.compat.v1.summary.scalar('validation_loss', val_error_)
 
-        val_dice_ = tf.placeholder(tf.float32, shape=[], name='val_dice')
-        val_dice_summary = tf.summary.scalar('validation_dice', val_dice_)
+        val_dice_ = tf.compat.v1.placeholder(tf.float32, shape=[], name='val_dice')
+        val_dice_summary = tf.compat.v1.summary.scalar('validation_dice', val_dice_)
 
-        val_summary = tf.summary.merge([val_error_summary, val_dice_summary])
+        val_summary = tf.compat.v1.summary.merge([val_error_summary, val_dice_summary])
 
-        train_error_ = tf.placeholder(tf.float32, shape=[], name='train_error')
-        train_error_summary = tf.summary.scalar('training_loss', train_error_)
+        train_error_ = tf.compat.v1.placeholder(tf.float32, shape=[], name='train_error')
+        train_error_summary = tf.compat.v1.summary.scalar('training_loss', train_error_)
 
-        train_dice_ = tf.placeholder(tf.float32, shape=[], name='train_dice')
-        train_dice_summary = tf.summary.scalar('training_dice', train_dice_)
+        train_dice_ = tf.compat.v1.placeholder(tf.float32, shape=[], name='train_dice')
+        train_dice_summary = tf.compat.v1.summary.scalar('training_dice', train_dice_)
 
-        train_summary = tf.summary.merge([train_error_summary, train_dice_summary])
+        train_summary = tf.compat.v1.summary.merge([train_error_summary, train_dice_summary])
 
         # Run the Op to initialize the variables.
         sess.run(init)
