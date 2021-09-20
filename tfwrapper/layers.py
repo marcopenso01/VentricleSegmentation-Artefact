@@ -1155,6 +1155,6 @@ def _bilinear_upsample_weights(shape):
 def _add_summaries(op, weights, biases):
     # Tensorboard variables
     tf.compat.v1.summary.histogram(weights.name, weights)
-    if biases:
+    if biases is not None:
         tf.compat.v1.summary.histogram(biases.name, biases)
     tf.compat.v1.summary.histogram(op.op.name + '/activations', op)
