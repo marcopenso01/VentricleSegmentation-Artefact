@@ -1,7 +1,7 @@
+import tensorflow as tf
+
 import configuration as config
 from tfwrapper import losses
-
-slim = tf.contrib.slim
 
 
 def inference(images, config, training):
