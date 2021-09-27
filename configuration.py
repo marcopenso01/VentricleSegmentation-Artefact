@@ -50,4 +50,4 @@ normalize = True
 max_epochs = 1000
 
 train_eval_frequency = 200
-val_eval_frequency = 150 
+val_eval_frequency = 200
