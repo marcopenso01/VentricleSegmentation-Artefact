@@ -8,10 +8,10 @@ import logging
 #same
 def unet2D_same(images, training, nlabels):
 
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=64, training=training)
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
     logging.info('conv1_1')
     logging.info(conv1_1.shape)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=64, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
     logging.info('conv1_2')
     logging.info(conv1_2.shape)
 
@@ -19,10 +19,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool1')
     logging.info(pool1.shape)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=128, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
     logging.info('conv2_1')
     logging.info(conv2_1.shape)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=128, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
     logging.info('conv2_2')
     logging.info(conv2_2.shape)
     
@@ -30,10 +30,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool2')
     logging.info(pool2.shape)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=256, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
     logging.info('conv3_1')
     logging.info(conv3_1.shape)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=256, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
     logging.info('conv3_2')
     logging.info(conv3_2.shape)
 
@@ -41,10 +41,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool3')
     logging.info(pool3.shape)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=512, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
     logging.info('conv4_1')
     logging.info(conv4_1.shape)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=512, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
     logging.info('conv4_2')
     logging.info(conv4_2.shape)
 
@@ -52,10 +52,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool4')
     logging.info(pool4.shape)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=1024, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
     logging.info('conv5_1')
     logging.info(conv5_1.shape)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=1024, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
     logging.info('conv5_2')
     logging.info(conv5_2.shape)
     
@@ -67,10 +67,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat4')
     logging.info(concat4.shape)
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=512, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
     logging.info('conv6_1')
     logging.info(conv6_1.shape)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=512, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
     logging.info('conv6_2')
     logging.info(conv6_2.shape)
     
@@ -82,10 +82,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat3')
     logging.info(concat3.shape)
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=256, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
     logging.info('conv7_1')
     logging.info(conv7_1.shape)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=256, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
     logging.info('conv7_2')
     logging.info(conv7_2.shape)
 
@@ -97,10 +97,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat2')
     logging.info(concat2.shape)
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=128, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
     logging.info('conv8_1')
     logging.info(conv8_1.shape)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=128, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
     logging.info('conv8_2')
     logging.info(conv8_2.shape)
 
@@ -112,10 +112,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat1')
     logging.info(concat1.shape)
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=64, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
     logging.info('conv9_1')
     logging.info(conv9_1.shape)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=64, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
     logging.info('conv9_2')
     logging.info(conv9_2.shape)
 
