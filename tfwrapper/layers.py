@@ -108,7 +108,7 @@ def pad_to_size(bottom, output_size):
         raise ValueError('Unexpected input size: %d' % input_size)
 
 
-def dropout_layer(bottom, name, training, keep_prob=0.5):
+def dropout_layer(bottom, name, training, keep_prob=0.2):
     '''
     Performs dropout on the activations of an input
     '''
