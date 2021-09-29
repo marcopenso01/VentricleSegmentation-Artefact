@@ -59,13 +59,23 @@ def run_training(continue_run):
     images_train = data['images_train'][()]
     labels_train = data['masks_train'][()]
     data.close()
+    for ii in range(len(images_train)):
+        if np.isnan(images_train[ii]).any():
+            raise AssertionError('Nan value in images_train: %d' % ii)
+        if np.isnan(labels_train[ii]).any():
+            raise AssertionError('Nan value in labels_train: %d' % ii)
 
     if not train_on_all_data:
         data = h5py.File(os.path.join(config.data_root, 'val.hdf5'), 'r')
         images_val = data['images_train'][()]
         labels_val = data['masks_train'][()]
         data.close()
-        
+        for ii in range(len(images_val)):
+        if np.isnan(images_val[ii]).any():
+            raise AssertionError('Nan value in images_val: %d' % ii)
+        if np.isnan(labels_val[ii]).any():
+            raise AssertionError('Nan value in labels_val: %d' % ii)
+            
     print_txt(log_dir, ['\nData summary:'])
     print_txt(log_dir, ['\n - Training Images:\n'])
     print_txt(log_dir, str(images_train.shape))
