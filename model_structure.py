@@ -167,7 +167,6 @@ def DenseUNet(images, training, nlabels):
     
     #encoder
     conv1 = layers.conv2D_layer_bn(images, 'conv1', num_filters=64, kernel_size=(7,7), strides=(2,2), training=training)
-    
     pool1 = layers.max_pool_layer2d(conv1)
 
     dens1 = layers.dense_block(pool1, 'dens1', growth_rate=32, n_layers=6, training=training)
@@ -176,16 +175,16 @@ def DenseUNet(images, training, nlabels):
     dens2 = layers.dense_block(trans1, 'dens2', growth_rate=32, n_layers=12, training=training)
     trans2 = layers.transition_layer(dens2, 'trans2', num_filters=256, training=training)
     
-    dens3 = layers.dense_block(trans2, 'dens3', growth_rate=32, n_layers=24, training=training)
+    dens3 = layers.dense_block(trans2, 'dens3', growth_rate=32, n_layers=16, training=training)
     trans3 = layers.transition_layer(dens3, 'trans3', num_filters=512, training=training)
     
     #bridge
-    dens4 = layers.dense_block(trans3, 'dens4', growth_rate=32, n_layers=16, training=training)
+    dens4 = layers.dense_block(trans3, 'dens4', growth_rate=32, n_layers=12, training=training)
 
     #decoder
     up1 = layers.upsample(dens4)
     concat1 = tf.concat([up1, dens3], axis=3, name='concat1')
-    conv2 = layers.conv2D_layer_bn(concat1, 'conv2', num_filters=640, kernel_size=(3,3), training=training)
+    conv2 = layers.conv2D_layer_bn(concat1, 'conv2', num_filters=512, kernel_size=(3,3), training=training)
     
     up2 = layers.upsample(conv2)
     concat2 = tf.concat([up2, dens2], axis=3, name='concat2')
@@ -200,9 +199,10 @@ def DenseUNet(images, training, nlabels):
     conv5 = layers.conv2D_layer_bn(concat4, 'conv5', num_filters=64, kernel_size=(3,3), training=training)
     
     up5 = layers.upsample(conv5)
-    conv6 = layers.conv2D_layer_bn(up5, 'conv6', num_filters=48, kernel_size=(3,3), training=training)
+    conv6 = layers.conv2D_layer_bn(up5, 'conv6', num_filters=32, kernel_size=(3,3), training=training)
     
     pred = layers.conv2D_layer_bn(conv6, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
+    
     print('conv1', conv1.shape)
     print('pool1', pool1.shape)
     print('dens1', dens1.shape)
