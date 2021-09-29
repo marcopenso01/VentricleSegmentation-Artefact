@@ -271,6 +271,8 @@ def run_training(continue_run):
                     train_temp.append([train_loss, train_dice])
                     
                     curr_lr = config.learning_rate * train_loss
+                    if curr_lr > 0.01:
+                        curr_lr = 0.01
                     print_txt(log_dir, ['\nLearning rate change to: %f' % curr_lr])
                     
                     if train_loss < last_train:  # best_train found:
