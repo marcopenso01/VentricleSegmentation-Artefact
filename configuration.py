@@ -20,7 +20,7 @@ gt_exists = True    #True if it exists the ground_trth images, otherwise False.
 
 # Training settings
 batch_size = 4 
-learning_rate = 0.001
+learning_rate = 0.01
 optimizer_handle = tf.compat.v1.train.AdamOptimizer     #(beta1 = 0.9, beta2 = 0.999, epsilon=1e-08)
 schedule_lr = False       #decrease 10 times the LR when loss gradient lower than threshold
 weight_decay = 0 
@@ -49,5 +49,5 @@ normalize = True
 # Rarely changed settings
 max_epochs = 1000
 
-train_eval_frequency = 200
-val_eval_frequency = 200
+train_eval_frequency = 250
+val_eval_frequency = 250
