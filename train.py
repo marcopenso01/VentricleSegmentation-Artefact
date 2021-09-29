@@ -32,7 +32,8 @@ assert version.parse(tf.__version__).release[0] >= 2, \
 def run_training(continue_run):
 
     logging.info('EXPERIMENT NAME: %s' % config.experiment_name)
-
+    print_txt(log_dir, ['\nEXPERIMENT NAME: %s' % config.experiment_name])
+    
     init_step = 0
 
     if continue_run:
@@ -42,8 +43,10 @@ def run_training(continue_run):
             logging.info('Checkpoint path: %s' % init_checkpoint_path)
             init_step = int(init_checkpoint_path.split('/')[-1].split('-')[-1]) + 1  # plus 1 b/c otherwise starts with eval
             logging.info('Latest step was: %d' % init_step)
+            print_txt(log_dir, ['\nLatest step was: %d' % init_step])
         except:
             logging.warning('!!! Didnt find init checkpoint. Maybe first run failed. Disabling continue mode...')
+            print_txt(log_dir, ['\n!!! Didnt find init checkpoint. Maybe first run failed. Disabling continue mode...'])
             continue_run = False
             init_step = 0
 
@@ -72,10 +75,23 @@ def run_training(continue_run):
     logging.info(' - Training Labels:')
     logging.info(labels_train.shape)
     logging.info(labels_train.dtype)
+    print_txt(log_dir, ['\nData summary:'])
+    print_txt(log_dir, ['\n - Training Images:\n'])
+    print_txt(log_dir, str(images_train.shape))
+    print_txt(log_dir, ['\n'])
+    print_txt(log_dir, str(images_train.dtype))
+    print_txt(log_dir, ['\n - Training Labels:\n'])
+    print_txt(log_dir, str(labels_train.shape))
+    print_txt(log_dir, ['\n'])
+    print_txt(log_dir, str(labels_train.dtype))
     if not train_on_all_data:
         logging.info(' - Validation Images:')
         logging.info(images_val.shape)
         logging.info(images_val.dtype)
+        print_txt(log_dir, ['\n - Validation Images:\n'])
+        print_txt(log_dir, str(images_val.shape))
+        print_txt(log_dir, ['\n'])
+        print_txt(log_dir, str(images_val.dtype))
     
     # Tell TensorFlow that the model will be built into the default Graph.
 
@@ -192,10 +208,12 @@ def run_training(continue_run):
         train_dice_history = []
         val_dice_history = []
         lr_history = []
-
+        qq = 0.01
+        
         for epoch in range(config.max_epochs):
 
             logging.info('EPOCH %d' % epoch)
+            print_txt(log_dir, ['\nEPOCH %d\n' % epoch])
             
             train_temp = []
             val_temp = []
@@ -231,6 +249,7 @@ def run_training(continue_run):
                 if step % 20 == 0:
                     # Print status to stdout.
                     logging.info('Step %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration))
+                    print_txt(log_dir, ['\nStep %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration)])
                     # Update the events file.
 
                     summary_str = sess.run(summary, feed_dict=feed_dict)
@@ -240,6 +259,7 @@ def run_training(continue_run):
                 if (step + 1) % config.train_eval_frequency == 0:
 
                     logging.info('Training Data Eval:')
+                    print_txt(log_dir, ['\nTraining Data Eval:'])
                     [train_loss, train_dice] = do_eval(sess,
                                                        eval_loss,
                                                        images_pl,
@@ -255,19 +275,20 @@ def run_training(continue_run):
                     summary_writer.add_summary(train_summary_msg, step)
 
                     train_temp.append([train_loss, train_dice])
-                    
+                    '''
                     curr_lr = config.learning_rate * train_loss
                     if curr_lr > 0.01:
                         curr_lr = 0.01
                     logging.info('Learning rate change to: %f' % curr_lr)
-                    
+                    '''
                     if train_loss < last_train:  # best_train found:
                         no_improvement_counter = 0
                         logging.info('Decrease in training error!')
+                        print_txt(log_dir, ['Decrease in training error!'])
                     else:
                         no_improvement_counter = no_improvement_counter+1
                         logging.info('No improvment in training error for %d steps' % no_improvement_counter)
-
+                        print_txt(log_dir, ['\nNo improvment in training error for %d steps' % no_improvement_counter])
                     last_train = train_loss
 
                 # Save a checkpoint and evaluate the model periodically.
@@ -284,6 +305,7 @@ def run_training(continue_run):
 
                         # Evaluate against the validation set.
                         logging.info('Validation Data Eval:')
+                        print_txt(log_dir, ['Validation Data Eval:'])
                         [val_loss, val_dice] = do_eval(sess,
                                                        eval_loss,
                                                        images_pl,
@@ -306,6 +328,7 @@ def run_training(continue_run):
                                 os.remove(file)
                             saver_best_dice.save(sess, best_file, global_step=step)
                             logging.info('Found new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice)
+                            print_txt(log_dir, ['\nFound new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice])
 
                         if val_loss < best_val:
                             best_val = val_loss
@@ -315,10 +338,14 @@ def run_training(continue_run):
                                 os.remove(file)
                             saver_best_loss.save(sess, best_file, global_step=step)
                             logging.info('Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
+                            print_txt(log_dir, ['\nFound new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss])
 
                 step += 1
-                
+             
             # end epoch
+            curr_lr = config.learning_rate * math.exp(-qq * epoch)
+            logging.info('Learning rate change to: %f' % curr_lr)
+            print_txt(log_dir, ['\nLearning rate change to: %f' % curr_lr])
             if len(train_temp)!=0:
                 lr_history.append(curr_lr)
                 sum_dice = 0
@@ -335,32 +362,33 @@ def run_training(continue_run):
                     sum_dice += val_temp[i][1]
                 val_loss_history.append(sum_loss/len(val_temp))
                 val_dice_history.append(sum_dice/len(val_temp))
-            
+                
+                #plot history (loss, dice, lr)
+                if epoch % 100 == 0:
+                    plt.figure()
+                    plt.plot(train_loss_history, label='train_loss')
+                    plt.plot(val_loss_history, label='val_loss')
+                    plt.title('model loss')
+                    plt.legend()
+                    plt.xlabel('epoch')
+                    plt.ylabel('loss')
+                    plt.savefig(os.path.join(log_dir,'loss.png'))
+                    plt.figure()
+                    plt.plot(train_dice_history, label='train_dice')
+                    plt.plot(val_dice_history, label='val_dice')
+                    plt.title('model dice')
+                    plt.legend()
+                    plt.xlabel('epoch')
+                    plt.ylabel('dice')
+                    plt.savefig(os.path.join(log_dir,'dice.png'))
+                    plt.figure()
+                    plt.plot(lr_history)
+                    plt.title('model learning rate')
+                    plt.xlabel('epoch')
+                    plt.ylabel('learning rate')
+                    plt.savefig(os.path.join(log_dir,'learning_rate.png'))
+        #end
         sess.close()
-        
-        #plot history (loss, dice, lr)
-        plt.figure()
-        plt.plot(train_loss_history, label='train_loss')
-        plt.plot(val_loss_history, label='val_loss')
-        plt.title('model loss')
-        plt.legend()
-        plt.xlabel('epoch')
-        plt.ylabel('loss')
-        plt.show()
-        plt.figure()
-        plt.plot(train_dice_history, label='train_dice')
-        plt.plot(val_dice_history, label='val_dice')
-        plt.title('model dice')
-        plt.legend()
-        plt.xlabel('epoch')
-        plt.ylabel('dice')
-        plt.show()
-        plt.figure()
-        plt.plot(lr_history)
-        plt.title('model learning rate')
-        plt.xlabel('epoch')
-        plt.ylabel('learning rate')
-        plt.show() 
 
 
 def do_eval(sess,
@@ -384,7 +412,6 @@ def do_eval(sess,
     :param batch_size: The batch_size to use. 
     :return: The average loss (as defined in the experiment), and the average dice over all `images`. 
     '''
-
     loss_ii = 0
     dice_ii = 0
     num_batches = 0
@@ -411,7 +438,8 @@ def do_eval(sess,
     avg_dice = dice_ii / num_batches
 
     logging.info('  Average loss: %0.04f, average dice: %0.04f' % (avg_loss, avg_dice))
-
+    print_txt(log_dir, ['\n  Average loss: %0.04f, average dice: %0.04f' % (avg_loss, avg_dice)])
+        
     return avg_loss, avg_dice
 
 
@@ -423,7 +451,6 @@ def iterate_minibatches(images, labels, batch_size, augment_batch=False):
     :param batch_size: batch size
     :return: mini batches
     '''
-
     random_indices = np.arange(images.shape[0])
     np.random.shuffle(random_indices)
 
@@ -447,15 +474,25 @@ def iterate_minibatches(images, labels, batch_size, augment_batch=False):
         if augment_batch:
             X, y = aug.augmentation_function(X, y)
 
-            
         yield X, y
 
+        
+def print_txt(output_dir, stringa):
+    out_file = os.path.join(output_dir, 'summary_report.txt')
+    with open(out_file, "a") as text_file:
+        text_file.writelines(stringa)
 
+        
 def main():
 
     continue_run = True
     if not tf.io.gfile.exists(log_dir):
         tf.io.gfile.makedirs(log_dir)
+        out_file = os.path.join(log_dir, 'summary_report.txt')
+        with open(out_file, "w") as text_file:
+            text_file.write('\n\n--------------------------------------------------------------------------\n')
+            text_file.write('Model summary\n')
+            text_file.write('-----------------------------------------------------------------------------\n\n')
         continue_run = False
 
     # Copy experiment config file
@@ -464,9 +501,5 @@ def main():
     run_training(continue_run)
 
 
-if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(
-    #     description="Train a neural network.")
-    # parser.add_argument("CONFIG_PATH", type=str, help="Path to config file (assuming you are in the working directory)")
-    # args = parser.parse_args() 
+if __name__ == '__main__': 
     main()
