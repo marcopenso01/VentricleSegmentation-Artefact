@@ -203,7 +203,30 @@ def DenseUNet(images, training, nlabels):
     conv6 = layers.conv2D_layer_bn(up5, 'conv6', num_filters=48, kernel_size=(3,3), training=training)
     
     pred = layers.conv2D_layer_bn(conv6, 'pred', num_filters=nlabels, kernel_size=(1,1), activation=tf.identity, training=training)
-
+    print('conv1', conv1.shape)
+    print('pool1', pool1.shape)
+    print('dens1', dens1.shape)
+    print('trans1', trans1.shape)
+    print('dens2', dens2.shape)
+    print('trans2', trans2.shape)
+    print('dens3', dens3.shape)
+    print('trans3', trans3.shape)
+    print('dens4', dens4.shape)
+    print('up1', up1.shape)
+    print('concat1', concat1.shape)
+    print('conv2', conv2.shape)
+    print('up2', up2.shape)
+    print('concat2', concat2.shape)
+    print('conv3', conv3.shape)
+    print('up3', up3.shape)
+    print('concat3', concat3.shape)
+    print('conv4', conv4.shape)
+    print('up4', up4.shape)
+    print('concat4', concat4.shape)
+    print('conv5', conv5.shape)
+    print('up5', up5.shape)
+    print('conv6', conv6.shape)
+    print('pred', pred.shape)
     return pred
     
 
