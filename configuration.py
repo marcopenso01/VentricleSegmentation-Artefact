@@ -22,7 +22,7 @@ train_on_all_data = False
 gt_exists = True    #True if it exists the ground_trth images, otherwise False.
 
 # Training settings
-batch_size = 4 
+batch_size = 8
 learning_rate = 0.001
 optimizer_handle = tf.compat.v1.train.AdamOptimizer     #(beta1 = 0.9, beta2 = 0.999, epsilon=1e-08)
 schedule_lr = False       #decrease 10 times the LR when loss gradient lower than threshold
