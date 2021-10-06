@@ -363,7 +363,7 @@ def run_training(continue_run):
                     logging.info('Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
                     print_txt(log_dir, ['\nFound new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss])
             
-            curr_lr = curr_lr * 0.98
+            curr_lr = math.exp(-0.009*epoch) * config.learning_rate
             logging.info('Learning rate change to: %f' % curr_lr)
             print_txt(log_dir, ['\nLearning rate change to: %f' % curr_lr])
             lr_history.append(curr_lr)
