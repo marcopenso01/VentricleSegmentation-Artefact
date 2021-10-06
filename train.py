@@ -1,3 +1,12 @@
+import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# The GPU id to use, usually either "0" or "1"
+#for GPU process:
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+#for CPU process:
+#os.environ["CUDA_VISIBLE_DEVICES"] =
+
 import os.path
 import shutil
 import time
@@ -7,7 +16,6 @@ import math
 import h5py
 import tensorflow as tf
 
-import os
 import numpy as np
 import logging
 import glob
@@ -19,10 +27,24 @@ import configuration as config
 import augmentation as aug
 from background_generator import BackgroundGenerator
 from packaging import version
+from tensorflow.python.client import device_lib
 
 logging.basicConfig(
     level=logging.INFO # allow DEBUG level messages to pass through the logger
     )
+
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#print(device_lib.list_local_devices())   #
+#nvidia-smi
+#print(K.tensorflow_backend._get_available_gpus())
+
+assert 'GPU' in str(device_lib.list_local_devices())
+
+print('is_gpu_available: %s' % tf.test.is_gpu_available()) # True/False
+# Or only check for gpu's with cuda support
+print('gpu with cuda support: %s' % tf.test.is_gpu_available(cuda_only=True))
+# tf.config.list_physical_devices('GPU') #The above function is deprecated in tensorflow > 2.1
 
 log_dir = os.path.join(config.log_root, config.experiment_name)
 
@@ -200,10 +222,15 @@ def run_training(continue_run):
         step = init_step
         curr_lr = config.learning_rate
 
-        no_improvement_counter = 0
-        best_val = np.inf
+        no_improvement_counter_loss = 0
+        no_improvement_counter_dice = 0
+
         last_train = np.inf
+        last_dice = 0
+
         best_dice = 0
+        best_val = np.inf
+
         train_loss_history = []
         val_loss_history = []
         train_dice_history = []
@@ -269,19 +296,28 @@ def run_training(continue_run):
                                                config.batch_size)
 
             train_summary_msg = sess.run(train_summary, feed_dict={train_error_: train_loss,
-                                                                   train_dice_: train_dice}
-                                         )
+                                                                   train_dice_: train_dice})
             summary_writer.add_summary(train_summary_msg, step)
 
             if train_loss < last_train:  # best_train found:
-                no_improvement_counter = 0
-                logging.info('Decrease in training error!')
-                print_txt(log_dir, ['\nDecrease in training error!'])
+                no_improvement_counter_loss = 0
+                logging.info('Decrease in training loss error!')
+                print_txt(log_dir, ['\nDecrease in training loss error!'])
             else:
-                no_improvement_counter = no_improvement_counter+1
-                logging.info('No improvment in training error for %d steps' % no_improvement_counter)
-                print_txt(log_dir, ['\nNo improvment in training error for %d steps' % no_improvement_counter])
+                no_improvement_counter_loss = no_improvement_counter_loss+1
+                logging.info('No improvment in training loss error for %d epoches' % no_improvement_counter_loss)
+                print_txt(log_dir, ['\nNo improvment in training loss error for %d epoches' % no_improvement_counter_loss])
             last_train = train_loss
+
+            if train_dice > last_dice:  # best_train found:
+                no_improvement_counter_dice = 0
+                logging.info('Decrease in training dice error!')
+                print_txt(log_dir, ['\nDecrease in training dice error!'])
+            else:
+                no_improvement_counter_dice = no_improvement_counter_dice+1
+                logging.info('No improvment in training dice error for %d epoches' % no_improvement_counter_dice)
+                print_txt(log_dir, ['\nNo improvment in training dice error for %d epoches' % no_improvement_counter_dice])
+            last_dice = train_dice
                 
             # Save a checkpoint and evaluate the model periodically.
             checkpoint_file = os.path.join(log_dir, 'model.ckpt')
@@ -304,8 +340,7 @@ def run_training(continue_run):
                                                labels_val,
                                                config.batch_size)
 
-                val_summary_msg = sess.run(val_summary, feed_dict={val_error_: val_loss, val_dice_: val_dice}
-                )
+                val_summary_msg = sess.run(val_summary, feed_dict={val_error_: val_loss, val_dice_: val_dice})
                 summary_writer.add_summary(val_summary_msg, step)
 
                 if val_dice > best_dice:
@@ -328,7 +363,7 @@ def run_training(continue_run):
                     logging.info('Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
                     print_txt(log_dir, ['\nFound new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss])
             
-            curr_lr = curr_lr * 0.985
+            curr_lr = curr_lr * 0.98
             logging.info('Learning rate change to: %f' % curr_lr)
             print_txt(log_dir, ['\nLearning rate change to: %f' % curr_lr])
             lr_history.append(curr_lr)
@@ -349,7 +384,8 @@ def run_training(continue_run):
                     plt.legend()
                     plt.xlabel('epoch')
                     plt.ylabel('loss')
-                    plt.savefig(os.path.join(log_dir,'loss.png'))
+                    plt.savefig(os.path.join(log_dir, 'loss.png'))
+
                     plt.figure()
                     plt.plot(train_dice_history, label='train_dice')
                     plt.plot(val_dice_history, label='val_dice')
@@ -357,13 +393,14 @@ def run_training(continue_run):
                     plt.legend()
                     plt.xlabel('epoch')
                     plt.ylabel('dice')
-                    plt.savefig(os.path.join(log_dir,'dice.png'))
+                    plt.savefig(os.path.join(log_dir, 'dice.png'))
+
                     plt.figure()
                     plt.plot(lr_history)
                     plt.title('model learning rate')
                     plt.xlabel('epoch')
                     plt.ylabel('learning rate')
-                    plt.savefig(os.path.join(log_dir,'learning_rate.png'))
+                    plt.savefig(os.path.join(log_dir, 'learning_rate.png'))
             else:
                 if epoch % 10 == 0:
                     plt.figure()
