@@ -190,12 +190,15 @@ def dense_block(bottom,
                 name,
                 training,
                 kernel_size=(3, 3),
+                init_filt = 128,
                 growth_rate=32,
                 strides=(1, 1),
                 activation=tf.nn.relu,
                 padding="SAME",
                 weight_init='he_normal',
-                n_layers=4):
+                n_layers=4,
+                nb_filter=96,
+                keep_prob=0.2):
     '''
     num_filters:= growth_rate
     MOre details here: https://towardsdatascience.com/paper-review-densenet-densely-connected-convolutional-networks-acf9065dfefb
@@ -208,13 +211,13 @@ def dense_block(bottom,
     x = conv2D_layer(bottom=x,
                      name=name + 'layer0_1x1',
                      kernel_size=(1, 1),
-                     num_filters=128,
+                     num_filters=init_filt,
                      strides=strides,
                      activation=tf.identity,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name + '_layer0_drop0', training)
+    x = dropout_layer(x, name + '_layer0_drop0', training, keep_prob=keep_prob)
 
     x = batch_normalisation_layer(bottom, name + '_layer0_bn1', training)
     x = activation(x)
@@ -227,9 +230,10 @@ def dense_block(bottom,
                      padding=padding,
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name + '_layer0_drop1', training)
+    x = dropout_layer(x, name + '_layer0_drop1', training, keep_prob=keep_prob)
 
     concat_feat = tf.concat([bottom, x], axis=-1)
+    nb_filter += growth_rate
 
     for i in range(1, n_layers):
         x = batch_normalisation_layer(concat_feat, name + '_layer' + str(i) + '_bn0', training)
@@ -237,13 +241,13 @@ def dense_block(bottom,
         x = conv2D_layer(bottom=x,
                          name=name + '_layer' + str(i) + '_1x1',
                          kernel_size=(1, 1),
-                         num_filters=128,
+                         num_filters=init_filt,
                          strides=strides,
                          activation=tf.identity,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = dropout_layer(x, name + '_layer' + str(i) + '_drop0', training)
+        x = dropout_layer(x, name + '_layer' + str(i) + '_drop0', training, keep_prob=keep_prob)
 
         x = batch_normalisation_layer(x, name + '_layer' + str(i) + '_bn1', training)
         x = activation(x)
@@ -256,11 +260,12 @@ def dense_block(bottom,
                          padding=padding,
                          weight_init=weight_init,
                          add_bias=False)
-        x = dropout_layer(x, name + '_layer' + str(i) + '_drop1', training)
+        x = dropout_layer(x, name + '_layer' + str(i) + '_drop1', training, keep_prob=keep_prob)
 
         concat_feat = tf.concat([concat_feat, x], axis=-1)
+        nb_filter += growth_rate
 
-    return concat_feat
+    return concat_feat, nb_filter
 
 
 def transition_layer(bottom,
@@ -273,19 +278,21 @@ def transition_layer(bottom,
     '''
     0: avg pool
     1: max pool
+    compression: calculated as 1 - reduction. Reduces the number of feature maps in the transition block.
     '''
+    compression = 0.5
     x = batch_normalisation_layer(bottom, name + '_bn', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
                      name=name + '_conv',
                      kernel_size=(1, 1),
-                     num_filters=num_filters,
+                     num_filters=int(num_filters*compression),
                      strides=(1, 1),
                      activation=tf.identity,
                      padding="SAME",
                      weight_init=weight_init,
                      add_bias=False)
-    x = dropout_layer(x, name + '_drop', training)
+    #x = dropout_layer(x, name + '_drop', training)
 
     if pool == 0:
         x = avg_pool_layer2d(x)
@@ -717,6 +724,7 @@ def attention(down_tensor,
               name,
               up_tensor,
               weight_init='he_normal'):
+
     channel = down_tensor.get_shape().as_list()[-1]
 
     x = conv2D_layer(bottom=down_tensor,
@@ -751,7 +759,7 @@ def attention(down_tensor,
                        weight_init=weight_init,
                        add_bias=False)
     net = tf.math.sigmoid(net)
-    net = tf.image.resize_bilinear(net, (tf.shape(net)[1] * 2, tf.shape(net)[2] * 2))
+    net = tf.image.resize(net, (tf.shape(net)[1] * 2, tf.shape(net)[2] * 2))
 
     return tf.multiply(net, down_tensor)
 
@@ -812,6 +820,34 @@ def conv2D_layer_bn(bottom,
     act = activation(conv_bn)
 
     return act
+
+
+def conv2D_layer_bn_drop(bottom,
+                         name,
+                         training,
+                         kernel_size=(3, 3),
+                         num_filters=32,
+                         strides=(1, 1),
+                         activation=tf.nn.relu,
+                         padding="SAME",
+                         weight_init='he_normal',
+                         keep_prob=0.3):
+
+    conv = conv2D_layer(bottom=bottom,
+                        name=name,
+                        kernel_size=kernel_size,
+                        num_filters=num_filters,
+                        strides=strides,
+                        activation=tf.identity,
+                        padding=padding,
+                        weight_init=weight_init,
+                        add_bias=False)
+
+    x = dropout_layer(conv, name + '_drop', training, keep_prob=keep_prob)
+    x = batch_normalisation_layer(x, name + '_bn', training)
+    x = activation(x)
+
+    return x
 
 
 def conv3D_layer_bn(bottom,
