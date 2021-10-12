@@ -529,7 +529,7 @@ def mod3unet2D(images, training, nlabels):
     print('add2', add2.shape)
     print('pred', pred.shape)
 
-    return
+    return pred
 
 
 # Proposed network
