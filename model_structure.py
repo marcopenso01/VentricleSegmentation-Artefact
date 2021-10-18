@@ -8,10 +8,10 @@ import logging
 #same
 def unet2D_same(images, training, nlabels):
 
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=56, training=training)
     logging.info('conv1_1')
     logging.info(conv1_1.shape)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=56, training=training)
     logging.info('conv1_2')
     logging.info(conv1_2.shape)
 
@@ -19,10 +19,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool1')
     logging.info(pool1.shape)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=112, training=training)
     logging.info('conv2_1')
     logging.info(conv2_1.shape)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=112, training=training)
     logging.info('conv2_2')
     logging.info(conv2_2.shape)
     
@@ -30,10 +30,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool2')
     logging.info(pool2.shape)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=224, training=training)
     logging.info('conv3_1')
     logging.info(conv3_1.shape)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=224, training=training)
     logging.info('conv3_2')
     logging.info(conv3_2.shape)
 
@@ -41,10 +41,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool3')
     logging.info(pool3.shape)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=448, training=training)
     logging.info('conv4_1')
     logging.info(conv4_1.shape)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=448, training=training)
     logging.info('conv4_2')
     logging.info(conv4_2.shape)
 
@@ -52,10 +52,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('pool4')
     logging.info(pool4.shape)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=896, training=training)
     logging.info('conv5_1')
     logging.info(conv5_1.shape)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=896, training=training)
     logging.info('conv5_2')
     logging.info(conv5_2.shape)
     
@@ -67,10 +67,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat4')
     logging.info(concat4.shape)
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=448, training=training)
     logging.info('conv6_1')
     logging.info(conv6_1.shape)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=448, training=training)
     logging.info('conv6_2')
     logging.info(conv6_2.shape)
     
@@ -82,10 +82,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat3')
     logging.info(concat3.shape)
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=224, training=training)
     logging.info('conv7_1')
     logging.info(conv7_1.shape)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=224, training=training)
     logging.info('conv7_2')
     logging.info(conv7_2.shape)
 
@@ -97,10 +97,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat2')
     logging.info(concat2.shape)
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=112, training=training)
     logging.info('conv8_1')
     logging.info(conv8_1.shape)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=112, training=training)
     logging.info('conv8_2')
     logging.info(conv8_2.shape)
 
@@ -112,10 +112,10 @@ def unet2D_same(images, training, nlabels):
     logging.info('concat1')
     logging.info(concat1.shape)
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=56, training=training)
     logging.info('conv9_1')
     logging.info(conv9_1.shape)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=56, training=training)
     logging.info('conv9_2')
     logging.info(conv9_2.shape)
 
@@ -242,52 +242,53 @@ def DenseUNet(images, training, nlabels):
 
 #Proposed network
 def mod1unet2D(images, training, nlabels):
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
+    n_filt = 56     #48    56    64
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=n_filt, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=n_filt, training=training)
 
     pool1 = layers.max_pool_layer2d(conv1_2)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=n_filt*2, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=n_filt*2, training=training)
 
     pool2 = layers.max_pool_layer2d(conv2_2)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=n_filt*4, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=n_filt*4, training=training)
 
     pool3 = layers.max_pool_layer2d(conv3_2)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=n_filt*8, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=n_filt*8, training=training)
 
     pool4 = layers.max_pool_layer2d(conv4_2)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=n_filt*16, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=n_filt*16, training=training)
 
     deconv4 = layers.deconv2D_layer_bn(conv5_2, 'deconv4', num_filters=4, training=training)
     concat4 = tf.concat([conv4_2, deconv4], axis=-1, name='concat4')
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=n_filt*8, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=n_filt*8, training=training)
 
     deconv3 = layers.deconv2D_layer_bn(conv6_2, 'deconv3', num_filters=4, training=training)
     concat3 = tf.concat([conv3_2, deconv3], axis=-1, name='concat3')
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=n_filt*4, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=n_filt*4, training=training)
 
     deconv2 = layers.deconv2D_layer_bn(conv7_2, 'deconv2', num_filters=4, training=training)
     concat2 = tf.concat([conv2_2, deconv2], axis=-1, name='concat2')
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=n_filt*2, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=n_filt*2, training=training)
 
     deconv1 = layers.deconv2D_layer_bn(conv8_2, 'deconv1', num_filters=4, training=training)
     concat1 = tf.concat([conv1_2, deconv1], axis=-1, name='concat1')
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=n_filt, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=n_filt, training=training)
 
     pred = layers.conv2D_layer_bn(conv9_2, 'pred', num_filters=nlabels, kernel_size=(1, 1), activation=tf.identity,
                                   training=training)
@@ -329,57 +330,58 @@ def mod1unet2D(images, training, nlabels):
 
 # Proposed network
 def mod2unet2D(images, training, nlabels):
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
+    n_filt = 56
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=n_filt, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=n_filt, training=training)
 
     pool1 = layers.max_pool_layer2d(conv1_2)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=n_filt*2, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=n_filt*2, training=training)
 
     pool2 = layers.max_pool_layer2d(conv2_2)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=n_filt*4, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=n_filt*4, training=training)
 
     pool3 = layers.max_pool_layer2d(conv3_2)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=n_filt*8, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=n_filt*8, training=training)
 
     pool4 = layers.max_pool_layer2d(conv4_2)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=n_filt*16, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=n_filt*16, training=training)
 
     deconv4 = layers.deconv2D_layer_bn(conv5_2, 'deconv4', num_filters=4, training=training)
     concat4 = tf.concat([conv4_2, deconv4], axis=-1, name='concat4')
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=n_filt*8, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=n_filt*8, training=training)
 
     deconv3 = layers.deconv2D_layer_bn(conv6_2, 'deconv3', num_filters=4, training=training)
     concat3 = tf.concat([conv3_2, deconv3], axis=-1, name='concat3')
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=n_filt*4, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=n_filt*4, training=training)
 
     deconv2 = layers.deconv2D_layer_bn(conv7_2, 'deconv2', num_filters=4, training=training)
     concat2 = tf.concat([conv2_2, deconv2], axis=-1, name='concat2')
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=n_filt*2, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=n_filt*2, training=training)
 
-    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=96, kernel_size=(1,1), training=training)
+    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=n_filt*2, kernel_size=(1,1), training=training)
     add1 = tf.add(deep1, conv8_2)
 
     deconv1 = layers.deconv2D_layer_bn(conv8_2, 'deconv1', num_filters=4, training=training)
     concat1 = tf.concat([conv1_2, deconv1], axis=-1, name='concat1')
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=n_filt, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=n_filt, training=training)
 
-    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=48, kernel_size=(1,1), training=training)
+    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=n_filt, kernel_size=(1,1), training=training)
     add2 = tf.add(deep2, conv9_2)
 
     pred = layers.conv2D_layer_bn(add2, 'pred', num_filters=nlabels, kernel_size=(1, 1), activation=tf.identity,
@@ -426,64 +428,65 @@ def mod2unet2D(images, training, nlabels):
 
 # Proposed network
 def mod3unet2D(images, training, nlabels):
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
+    n_filt=56
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=n_filt, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=n_filt, training=training)
 
     pool1 = layers.max_pool_layer2d(conv1_2)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=n_filt*2, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=n_filt*2, training=training)
 
     pool2 = layers.max_pool_layer2d(conv2_2)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=n_filt*4, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=n_filt*4, training=training)
 
     pool3 = layers.max_pool_layer2d(conv3_2)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=n_filt*8, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=n_filt*8, training=training)
 
     pool4 = layers.max_pool_layer2d(conv4_2)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=n_filt*16, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=n_filt*16, training=training)
 
     deconv4 = layers.deconv2D_layer_bn(conv5_2, 'deconv4', num_filters=4, training=training)
 
     cbam4 = layers.conv_block_att_module(conv4_2, 'cbam4', kernel_size=(7, 7), ratio=16)
     concat4 = tf.concat([cbam4, deconv4], axis=-1, name='concat4')
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=n_filt*8, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=n_filt*8, training=training)
 
     deconv3 = layers.deconv2D_layer_bn(conv6_2, 'deconv3', num_filters=4, training=training)
 
     cbam3 = layers.conv_block_att_module(conv3_2, 'cbam3', kernel_size=(7, 7), ratio=16)
     concat3 = tf.concat([cbam3, deconv3], axis=-1, name='concat3')
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=n_filt*4, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=n_filt*4, training=training)
 
     deconv2 = layers.deconv2D_layer_bn(conv7_2, 'deconv2', num_filters=4, training=training)
 
     cbam2 = layers.conv_block_att_module(conv2_2, 'cbam2', kernel_size=(7, 7), ratio=16)
     concat2 = tf.concat([cbam2, deconv2], axis=-1, name='concat2')
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=n_filt*2, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=n_filt*2, training=training)
 
-    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=96, kernel_size=(1,1), training=training)
+    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=n_filt*2, kernel_size=(1,1), training=training)
     add1 = tf.add(deep1, conv8_2)
 
     deconv1 = layers.deconv2D_layer_bn(conv8_2, 'deconv1', num_filters=4, training=training)
     cbam1 = layers.conv_block_att_module(conv1_2, 'cbam1', kernel_size=(7, 7), ratio=16)
     concat1 = tf.concat([cbam1, deconv1], axis=-1, name='concat1')
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=n_filt, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=n_filt, training=training)
 
-    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=48, kernel_size=(1,1), training=training)
+    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=n_filt, kernel_size=(1,1), training=training)
     add2 = tf.add(deep2, conv9_2)
 
     pred = layers.conv2D_layer_bn(add2, 'pred', num_filters=nlabels, kernel_size=(1, 1), activation=tf.identity,
@@ -534,54 +537,55 @@ def mod3unet2D(images, training, nlabels):
 
 # Proposed network
 def mod4unet2D(images, training, nlabels):
-    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=48, training=training)
-    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=48, training=training)
+    n_filt=56
+    conv1_1 = layers.conv2D_layer_bn(images, 'conv1_1', num_filters=n_filt, training=training)
+    conv1_2 = layers.conv2D_layer_bn(conv1_1, 'conv1_2', num_filters=n_filt, training=training)
 
     pool1 = layers.max_pool_layer2d(conv1_2)
 
-    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=96, training=training)
-    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=96, training=training)
+    conv2_1 = layers.conv2D_layer_bn(pool1, 'conv2_1', num_filters=n_filt*2, training=training)
+    conv2_2 = layers.conv2D_layer_bn(conv2_1, 'conv2_2', num_filters=n_filt*2, training=training)
 
     pool2 = layers.max_pool_layer2d(conv2_2)
 
-    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=192, training=training)
-    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=192, training=training)
+    conv3_1 = layers.conv2D_layer_bn(pool2, 'conv3_1', num_filters=n_filt*4, training=training)
+    conv3_2 = layers.conv2D_layer_bn(conv3_1, 'conv3_2', num_filters=n_filt*4, training=training)
 
     pool3 = layers.max_pool_layer2d(conv3_2)
 
-    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=384, training=training)
-    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=384, training=training)
+    conv4_1 = layers.conv2D_layer_bn(pool3, 'conv4_1', num_filters=n_filt*8, training=training)
+    conv4_2 = layers.conv2D_layer_bn(conv4_1, 'conv4_2', num_filters=n_filt*8, training=training)
 
     pool4 = layers.max_pool_layer2d(conv4_2)
 
-    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=768, training=training)
-    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=768, training=training)
+    conv5_1 = layers.conv2D_layer_bn(pool4, 'conv5_1', num_filters=n_filt*16, training=training)
+    conv5_2 = layers.conv2D_layer_bn(conv5_1, 'conv5_2', num_filters=n_filt*16, training=training)
 
     deconv4 = layers.deconv2D_layer_bn(conv5_2, 'deconv4', num_filters=4, training=training)
 
     att4 = layers.attention(conv4_2, 'att4', conv5_2)
     concat4 = tf.concat([att4, deconv4], axis=-1, name='concat4')
 
-    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=384, training=training)
-    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=384, training=training)
+    conv6_1 = layers.conv2D_layer_bn(concat4, 'conv6_1', num_filters=n_filt*8, training=training)
+    conv6_2 = layers.conv2D_layer_bn(conv6_1, 'conv6_2', num_filters=n_filt*8, training=training)
 
     deconv3 = layers.deconv2D_layer_bn(conv6_2, 'deconv3', num_filters=4, training=training)
 
     att3 = layers.attention(conv3_2, 'att3', conv6_2)
     concat3 = tf.concat([att3, deconv3], axis=-1, name='concat3')
 
-    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=192, training=training)
-    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=192, training=training)
+    conv7_1 = layers.conv2D_layer_bn(concat3, 'conv7_1', num_filters=n_filt*4, training=training)
+    conv7_2 = layers.conv2D_layer_bn(conv7_1, 'conv7_2', num_filters=n_filt*4, training=training)
 
     deconv2 = layers.deconv2D_layer_bn(conv7_2, 'deconv2', num_filters=4, training=training)
 
     att2 = layers.attention(conv2_2, 'att2', conv7_2)
     concat2 = tf.concat([att2, deconv2], axis=-1, name='concat2')
 
-    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=96, training=training)
-    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=96, training=training)
+    conv8_1 = layers.conv2D_layer_bn(concat2, 'conv8_1', num_filters=n_filt*2, training=training)
+    conv8_2 = layers.conv2D_layer_bn(conv8_1, 'conv8_2', num_filters=n_filt*2, training=training)
 
-    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=96, kernel_size=(1,1), training=training)
+    deep1 = layers.deconv2D_layer_bn(conv7_2, 'deep1', num_filters=n_filt*2, kernel_size=(1,1), training=training)
     add1 = tf.add(deep1, conv8_2)
 
     deconv1 = layers.deconv2D_layer_bn(conv8_2, 'deconv1', num_filters=4, training=training)
@@ -589,10 +593,10 @@ def mod4unet2D(images, training, nlabels):
     att1 = layers.attention(conv1_2, 'att1', conv8_2)
     concat1 = tf.concat([att1, deconv1], axis=-1, name='concat1')
 
-    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=48, training=training)
-    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=48, training=training)
+    conv9_1 = layers.conv2D_layer_bn(concat1, 'conv9_1', num_filters=n_filt, training=training)
+    conv9_2 = layers.conv2D_layer_bn(conv9_1, 'conv9_2', num_filters=n_filt, training=training)
 
-    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=48, kernel_size=(1,1), training=training)
+    deep2 = layers.deconv2D_layer_bn(add1, 'deep2', num_filters=n_filt, kernel_size=(1,1), training=training)
     add2 = tf.add(deep2, conv9_2)
 
     pred = layers.conv2D_layer_bn(add2, 'pred', num_filters=nlabels, kernel_size=(1, 1), activation=tf.identity,
