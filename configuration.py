@@ -34,7 +34,7 @@ augment_batch = True
 
 # Augmentation settings
 do_rotation_range = True   #random rotation in range "rg" (min,max)
-rg = (-20, 20)
+rg = (-25, 25)
 gamma = True               #transforms the input image pixelwise according to the equation O = I**gamma
 prob = 1                   #Probability [0.0/1.0] (0 no augmentation, 1 always)
 
