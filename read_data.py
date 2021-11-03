@@ -3,6 +3,12 @@ Created on Fri Aug 27 13:44:33 2021
 
 @author: Marco Penso
 """
+"""
+Created on Mon Aug 30 15:47:22 2021
+
+@author: Marco Penso
+"""
+
 import os
 import numpy as np
 import h5py
@@ -301,7 +307,7 @@ def generator_mask2(img, green_pixels):
     return final_mask
 
 
-def prepare_data(input_folder, output_file, nx, ny):
+def prepare_data(input_folder, output_file, nx, ny, paz, angle):
     
     hdf5_file = h5py.File(output_file, "w")
     
@@ -310,8 +316,10 @@ def prepare_data(input_folder, output_file, nx, ny):
     MASK = []
     IMG_SEG = []  #img in uint8 con segmentazione
     IMG_RAW = []  #img in float senza segmentazione
-    IMG_CIR = []  #img in uint8 con segmentazione
-    MASK_CIR = []
+    #IMG_CIR = []  #img in uint8 con segmentazione
+    #MASK_CIR = []
+    PHS = []
+    PAZ = []
 
     path_seg = os.path.join(input_folder, 'SEG')
     path_seg = os.path.join(path_seg, os.listdir(path_seg)[0])
@@ -319,8 +327,8 @@ def prepare_data(input_folder, output_file, nx, ny):
     path_raw = os.path.join(input_folder, 'RAW')
     path_raw = os.path.join(path_raw, os.listdir(path_raw)[0])
 
-    path_cir = os.path.join(input_folder, 'CIRCLE')
-    path_cir = os.path.join(path_cir, os.listdir(path_cir)[0])
+    #path_cir = os.path.join(input_folder, 'CIRCLE')
+    #path_cir = os.path.join(path_cir, os.listdir(path_cir)[0])
 
     for i in range(len(os.listdir(path_seg))):
         dcmPath = os.path.join(path_seg, os.listdir(path_seg)[i])
@@ -367,7 +375,10 @@ def prepare_data(input_folder, output_file, nx, ny):
             img = data_row_img.pixel_array
             img = crop_or_pad_slice_to_size(img, 390, 390)
             IMG_RAW.append(img)
-
+            
+            PAZ.append(paz)
+            
+            '''
             # circle
             dcmPath = os.path.join(path_cir, os.listdir(path_cir)[i])
             data_row_img = pydicom.dcmread(dcmPath)
@@ -404,16 +415,16 @@ def prepare_data(input_folder, output_file, nx, ny):
                 plt.title('corrected circle mask %d' % (i+1));
                 cir_mask = temp_mask
             MASK_CIR.append(cir_mask)
-            
+            '''
     
     #rotation
-    angle = 62
-    for i in range(len(IMG_SEG)):
-        IMG_SEG[i] = rot(IMG_SEG[i], angle)
-        IMG_RAW[i] = rot(IMG_RAW[i], angle)
-        IMG_CIR[i] = rot(IMG_CIR[i], angle)
-        MASK_CIR[i] = rot(MASK_CIR[i], angle)
-        MASK[i] = rot(MASK[i], angle)
+    if angle != 0:
+        for i in range(len(IMG_SEG)):
+            IMG_SEG[i] = rot(IMG_SEG[i], angle)
+            IMG_RAW[i] = rot(IMG_RAW[i], angle)
+            IMG_CIR[i] = rot(IMG_CIR[i], angle)
+            #MASK_CIR[i] = rot(MASK_CIR[i], angle)
+            #MASK[i] = rot(MASK[i], angle)
     
                 
     CX = []
@@ -483,14 +494,14 @@ def prepare_data(input_folder, output_file, nx, ny):
     
     for i in range(len(IMG_SEG)):
         
-        if len_max+40 < nx and len_max+40 < ny:
+        if len_max+38 < nx and len_max+38 < ny:
             IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], nx, ny, cx, cy)
             IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], nx, ny, cx, cy)
             IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], nx, ny, cx, cy)
             MASK_CIR[i] = crop_or_pad_slice_to_size_specific_point(MASK_CIR[i], nx, ny, cx, cy)
             MASK[i] = crop_or_pad_slice_to_size_specific_point(MASK[i], nx, ny, cx, cy)
         else:
-            tt =48
+            tt =46
             IMG_SEG[i] = crop_or_pad_slice_to_size_specific_point(IMG_SEG[i], len_max+tt, len_max+tt, cx, cy)
             IMG_RAW[i] = crop_or_pad_slice_to_size_specific_point(IMG_RAW[i], len_max+tt, len_max+tt, cx, cy)
             IMG_CIR[i] = crop_or_pad_slice_to_size_specific_point(IMG_CIR[i], len_max+tt, len_max+tt, cx, cy)
@@ -563,7 +574,9 @@ def prepare_data(input_folder, output_file, nx, ny):
 def load_and_maybe_process_data(input_folder,
                                 preprocessing_folder,
                                 nx,
-                                ny):
+                                ny,
+                                paz,
+                                angle):
         
     '''
     This function is used to load and if necessary preprocesses the dataset
@@ -584,7 +597,7 @@ def load_and_maybe_process_data(input_folder,
 
         print('This configuration of mode, size and target resolution has not yet been preprocessed')
         print('Preprocessing now!')
-        prepare_data(input_folder, data_file_path, nx, ny)
+        prepare_data(input_folder, data_file_path, nx, ny, paz, angle)
 
     else:
 
@@ -596,8 +609,12 @@ def load_and_maybe_process_data(input_folder,
 if __name__ == '__main__':
 
     # Paths settings
-    input_folder = r'F:\ARTEFACTS\SANI\paz85'
-    preprocessing_folder = os.path.join(input_folder, 'pre_proc')
+    paz = 'paz25'
+    angle = 0
+    input_folder = r'F:/ARTEFACTS/test'
     nx = 192
     ny = 192
-    d=load_and_maybe_process_data(input_folder, preprocessing_folder, nx, ny)
+    
+    paz_folder = os.path.join(input_folder, paz)
+    preprocessing_folder = os.path.join(paz_folder, 'pre_proc')
+    d=load_and_maybe_process_data(paz_folder, preprocessing_folder, nx, ny, paz, angle)
