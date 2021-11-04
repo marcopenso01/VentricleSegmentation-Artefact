@@ -1,5 +1,13 @@
-import logging
 import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# The GPU id to use, usually either "0" or "1"
+# for GPU process:
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+# for CPU process:
+# os.environ["CUDA_VISIBLE_DEVICES"] =
+
+import logging
 import time
 
 import h5py
@@ -11,16 +19,50 @@ import image_utils
 import metrics
 import model as model
 import utils
+from packaging import version
+from tensorflow.python.client import device_lib
 
 logging.basicConfig(
     level=logging.INFO  # allow DEBUG level messages to pass through the logger
 )
 
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# print(device_lib.list_local_devices())   #
+# nvidia-smi
+# print(K.tensorflow_backend._get_available_gpus())
 
-def score_data(input_folder, output_folder, model_path, config, do_postprocessing=False, dice=True):
+assert 'GPU' in str(device_lib.list_local_devices())
+
+print('is_gpu_available: %s' % tf.test.is_gpu_available())  # True/False
+# Or only check for gpu's with cuda support
+print('gpu with cuda support: %s' % tf.test.is_gpu_available(cuda_only=True))
+# tf.config.list_physical_devices('GPU') #The above function is deprecated in tensorflow > 2.1
+
+log_dir = os.path.join(config.log_root, config.experiment_name)
+
+print("TensorFlow version: ", tf.__version__)
+assert version.parse(tf.__version__).release[0] >= 2, \
+    "this notebook requires Tensorflow 2.0 or above"
+
+
+def makefolder(folder):
+    '''
+    Helper function to make a new folder if doesn't exist
+    :param folder: path to new folder
+    :return: True if folder created, False if folder already exists
+    '''
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        return True
+    return False
+
+
+def score_data(input_path, output_folder, model_path, config, do_postprocessing=False, dice=True):
     nx, ny = config.image_size[:2]
     batch_size = 1
     num_channels = config.nlabels
+    gt_exists = config.gt_exists
 
     image_tensor_shape = [batch_size] + list(config.image_size) + [1]
     images_pl = tf.compat.v1.placeholder(tf.float32, shape=image_tensor_shape, name='images')
@@ -46,6 +88,8 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
         total_time = 0
         total_volumes = 0
 
+        if not os.path.exists(output_folder):
+            makefolder(output_folder)
         data_file_path = os.path.join(output_folder, data_file_name)
         out_file = h5py.File(data_file_path, "w")
 
@@ -59,19 +103,21 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
         for paz in os.listdir(input_path):
 
             start_time = time.time()
-            logging.info('Reading %s' % paz)
+            logging.info('------- Reading %s' % paz)
             data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')
 
             n_file = len(data['img_raw'][()])
+
             for ii in range(n_file):
-                RAW.append(data['img_raw'][ii])
+
+                img = data['img_raw'][ii].copy()
+                RAW.append(img)
                 PAZ.append(paz)
                 PHS.append(data['phase'][ii])
-                if config.gt_exists:
+                if gt_exists:
                     MASK.append(data['mask'][ii])
                     CIR_MASK.append(data['mask_cir'][ii])
 
-                img = data['img_raw'][ii].copy()
                 if config.standardize:
                     img = image_utils.standardize_image(img)
                 if config.normalize:
@@ -104,7 +150,7 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
         out_file.create_dataset('pred', [n_file] + [nx, ny], dtype=np.uint8)
         out_file.create_dataset('paz', (n_file,), dtype=dt)
         out_file.create_dataset('phase', (n_file,), dtype=dt)
-        if config.gt_exists:
+        if gt_exists:
             out_file.create_dataset('mask', [n_file] + [nx, ny], dtype=np.uint8)
             out_file.create_dataset('mask_cir', [n_file] + [nx, ny], dtype=np.uint8)
 
@@ -113,7 +159,7 @@ def score_data(input_folder, output_folder, model_path, config, do_postprocessin
             out_file['pred'][i, ...] = PRED[i]
             out_file['paz'][i, ...] = PAZ[i]
             out_file['phase'][i, ...] = PHS[i]
-            if config.gt_exists:
+            if gt_exists:
                 out_file['mask'][i, ...] = MASK[i]
                 out_file['mask_cir'][i, ...] = CIR_MASK[i]
 
