@@ -113,13 +113,9 @@ def dropout_layer(bottom, name, training, keep_prob=0.2):
     Performs dropout on the activations of an input
     '''
 
-    keep_prob_pl = tf.cond(training,
-                           lambda: tf.constant(keep_prob, dtype=bottom.dtype),
-                           lambda: tf.constant(1.0, dtype=bottom.dtype))
-
     # The tf.nn.dropout function takes care of all the scaling
     # (https://www.tensorflow.org/get_started/mnist/pros)
-    return tf.nn.dropout(bottom, rate=keep_prob_pl, name=name)
+    return tf.nn.dropout(bottom, rate=keep_prob, name=name)
 
 
 def batch_normalisation_layer(bottom, name, training):
@@ -168,7 +164,7 @@ def conv2D_layer(bottom,
 
     with tf.compat.v1.variable_scope(name):
         # initialise weights
-        weights = get_weight_variable(weight_shape, name='W', regularize=True)
+        weights = get_weight_variable(weight_shape, name='W', type=weight_init, regularize=True)
         op = tf.nn.conv2d(bottom, filters=weights, strides=strides_augm, padding=padding)
 
         biases = None
@@ -190,7 +186,7 @@ def dense_block(bottom,
                 name,
                 training,
                 kernel_size=(3, 3),
-                init_filt = 128,
+                init_filt=128,
                 growth_rate=32,
                 strides=(1, 1),
                 activation=tf.nn.relu,
@@ -219,7 +215,7 @@ def dense_block(bottom,
                      add_bias=False)
     x = dropout_layer(x, name + '_layer0_drop0', training, keep_prob=keep_prob)
 
-    x = batch_normalisation_layer(bottom, name + '_layer0_bn1', training)
+    x = batch_normalisation_layer(x, name + '_layer0_bn1', training)
     x = activation(x)
     x = conv2D_layer(bottom=x,
                      name=name + 'layer0_3x3',
@@ -323,7 +319,7 @@ def conv3D_layer(bottom,
     strides_augm = [1, strides[0], strides[1], strides[2], 1]
 
     with tf.compat.v1.variable_scope(name):
-        weights = get_weight_variable(weight_shape, name='W', regularize=True)
+        weights = get_weight_variable(weight_shape, name='W', type=weight_init, regularize=True)
         op = tf.nn.conv3d(bottom, filter=weights, strides=strides_augm, padding=padding)
 
         biases = None
@@ -366,7 +362,7 @@ def deconv2D_layer(bottom,
 
     with tf.compat.v1.variable_scope(name):
 
-        weights = get_weight_variable(weight_shape, name='W', regularize=True)
+        weights = get_weight_variable(weight_shape, name='W', type=weight_init, regularize=True)
 
         op = tf.nn.conv2d_transpose(bottom,
                                     filters=weights,
@@ -418,7 +414,7 @@ def deconv3D_layer(bottom,
 
     with tf.compat.v1.variable_scope(name):
 
-        weights = get_weight_variable(weight_shape, name='W', regularize=True)
+        weights = get_weight_variable(weight_shape, name='W', type=weight_init, regularize=True)
 
         op = tf.nn.conv3d_transpose(bottom,
                                     filter=weights,
@@ -459,7 +455,7 @@ def conv2D_dilated_layer(bottom,
     bias_shape = [num_filters]
 
     with tf.compat.v1.variable_scope(name):
-        weights = get_weight_variable(weight_shape, name='W', regularize=True)
+        weights = get_weight_variable(weight_shape, name='W', type=weight_init, regularize=True)
 
         op = tf.nn.atrous_conv2d(bottom, filters=weights, rate=rate, padding=padding)
 
@@ -513,7 +509,6 @@ As described in https://arxiv.org/pdf/1709.01507.pdf
 
 def se_block(tensor,
              name,
-             activation=tf.nn.relu,
              weight_init='he_normal',
              ratio=16):
     init = tensor
@@ -560,8 +555,7 @@ def selective_kernel_block(bottom,
                            activation=tf.nn.relu,
                            padding="SAME",
                            weight_init='he_normal',
-                           M=2,
-                           r=16):
+                           M=2):
     '''
     M: number of path
     r: number of parameters in the fuse operator
@@ -629,13 +623,13 @@ Contains the implementation of Convolutional Block Attention Module(CBAM) block.
 As described in https://arxiv.org/abs/1807.06521.
 '''
 
-
 def conv_block_att_module(bottom,
                           name,
                           kernel_size=(7, 7),
                           ratio=8,
                           activation=tf.nn.relu,
                           weight_init='he_normal'):
+
     attention_feature = channel_attention(bottom=bottom,
                                           name=name,
                                           ratio=ratio,
@@ -645,7 +639,6 @@ def conv_block_att_module(bottom,
     attention_feature = spatial_attention(bottom=attention_feature,
                                           name=name,
                                           kernel_size=kernel_size,
-                                          activation=activation,
                                           weight_init=weight_init)
 
     return attention_feature
@@ -688,8 +681,8 @@ def channel_attention(bottom,
 def spatial_attention(bottom,
                       name,
                       kernel_size=(7, 7),
-                      activation=tf.nn.relu,
                       weight_init='he_normal'):
+
     avg_pool = tf.reduce_mean(bottom, axis=[3], keepdims=True)
     max_pool = tf.reduce_max(bottom, axis=[3], keepdims=True)
 
@@ -718,17 +711,15 @@ generalization power. Essentially, the network can pay “attention” to certai
 parts of the image.
 As described in https://arxiv.org/pdf/1804.03999.pdf
 '''
-
-
-def attention(down_tensor,
+def attention(input_x,
               name,
-              up_tensor,
+              gating_signal,
               weight_init='he_normal'):
 
-    channel = down_tensor.get_shape().as_list()[-1]
+    channel = input_x.get_shape().as_list()[-1]
 
-    x = conv2D_layer(bottom=down_tensor,
-                     name=name + '_g',
+    x = conv2D_layer(bottom=input_x,
+                     name=name + '_x',
                      kernel_size=(1, 1),
                      num_filters=channel,
                      strides=(2, 2),
@@ -737,8 +728,8 @@ def attention(down_tensor,
                      weight_init=weight_init,
                      add_bias=False)
 
-    g = conv2D_layer(bottom=up_tensor,
-                     name=name + '_x',
+    g = conv2D_layer(bottom=gating_signal,
+                     name=name + '_g',
                      kernel_size=(1, 1),
                      num_filters=channel,
                      strides=(1, 1),
@@ -761,7 +752,7 @@ def attention(down_tensor,
     net = tf.math.sigmoid(net)
     net = tf.image.resize(net, (tf.shape(net)[1] * 2, tf.shape(net)[2] * 2))
 
-    return tf.multiply(net, down_tensor)
+    return tf.multiply(net, input_x)
 
 
 def projection(bottom,
@@ -1110,8 +1101,8 @@ def dense_layer_bn(bottom,
 
 ### VARIABLE INITIALISERS ####################################################################################
 
-def get_weight_variable(shape, name=None, regularize=True, **kwargs):
-    type = config.weight_init
+def get_weight_variable(shape, name=None, type='xavier_uniform', regularize=True, **kwargs):
+
     initialise_from_constant = False
     if type == 'xavier_uniform':
         initial = glorot_uniform()
