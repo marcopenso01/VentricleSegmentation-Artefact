@@ -2,10 +2,10 @@ import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 # The GPU id to use, usually either "0" or "1"
-#for GPU process:
+# for GPU process:
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
-#for CPU process:
-#os.environ["CUDA_VISIBLE_DEVICES"] =
+# for CPU process:
+# os.environ["CUDA_VISIBLE_DEVICES"] =
 
 import os.path
 import shutil
@@ -22,26 +22,24 @@ import glob
 import matplotlib.pyplot as plt
 import utils
 import model as model
-#import read_data
+# import read_data
 import configuration as config
 import augmentation as aug
 from background_generator import BackgroundGenerator
 from packaging import version
 from tensorflow.python.client import device_lib
 
-logging.basicConfig(
-    level=logging.INFO # allow DEBUG level messages to pass through the logger
-    )
+logging.basicConfig(level=logging.INFO)  # allow DEBUG level messages to pass through the logger
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#print(device_lib.list_local_devices())   #
-#nvidia-smi
-#print(K.tensorflow_backend._get_available_gpus())
+# print(device_lib.list_local_devices())   #
+# nvidia-smi
+# print(K.tensorflow_backend._get_available_gpus())
 
 assert 'GPU' in str(device_lib.list_local_devices())
 
-print('is_gpu_available: %s' % tf.test.is_gpu_available()) # True/False
+print('is_gpu_available: %s' % tf.test.is_gpu_available())  # True/False
 # Or only check for gpu's with cuda support
 print('gpu with cuda support: %s' % tf.test.is_gpu_available(cuda_only=True))
 # tf.config.list_physical_devices('GPU') #The above function is deprecated in tensorflow > 2.1
@@ -52,11 +50,11 @@ print("TensorFlow version: ", tf.__version__)
 assert version.parse(tf.__version__).release[0] >= 2, \
     "this notebook requires Tensorflow 2.0 or above"
 
-def run_training(continue_run):
 
+def run_training(continue_run):
     logging.info('EXPERIMENT NAME: %s' % config.experiment_name)
     print_txt(log_dir, ['\nEXPERIMENT NAME: %s' % config.experiment_name])
-    
+
     init_step = 0
 
     if continue_run:
@@ -64,7 +62,8 @@ def run_training(continue_run):
         try:
             init_checkpoint_path = utils.get_latest_model_checkpoint_path(log_dir, 'model.ckpt')
             logging.info('Checkpoint path: %s' % init_checkpoint_path)
-            init_step = int(init_checkpoint_path.split('/')[-1].split('-')[-1]) + 1  # plus 1 b/c otherwise starts with eval
+            init_step = int(
+                init_checkpoint_path.split('/')[-1].split('-')[-1]) + 1  # plus 1 b/c otherwise starts with eval
             logging.info('Latest step was: %d' % init_step)
             print_txt(log_dir, ['\nLatest step was: %d' % init_step])
         except:
@@ -76,10 +75,10 @@ def run_training(continue_run):
         logging.info('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
     train_on_all_data = config.train_on_all_data
-    
+
     # Load data train
     data = h5py.File(os.path.join(config.data_root, 'train.hdf5'), 'r')
-    
+
     # the following are HDF5 datasets, not numpy arrays
     images_train = data['images_train'][()]
     labels_train = data['masks_train'][()]
@@ -90,7 +89,7 @@ def run_training(continue_run):
         images_val = data['images_train'][()]
         labels_val = data['masks_train'][()]
         data.close()
-        
+
     logging.info('Data summary:')
     logging.info(' - Training Images:')
     logging.info(images_train.shape)
@@ -115,7 +114,7 @@ def run_training(continue_run):
         print_txt(log_dir, str(images_val.shape))
         print_txt(log_dir, ['\n'])
         print_txt(log_dir, str(images_val.dtype))
-    
+
     # Tell TensorFlow that the model will be built into the default Graph.
 
     with tf.Graph().as_default():
@@ -134,8 +133,8 @@ def run_training(continue_run):
         tf.summary.scalar('learning_rate', learning_rate_pl)
 
         # Build a Graph that computes predictions from the inference model.
-        logits = model.inference(images_pl, config, training=training_pl) 
-        
+        logits = model.inference(images_pl, config, training=training_pl)
+
         logging.info('images_pl shape')
         logging.info(images_pl.shape)
         logging.info('labels_pl shape')
@@ -148,10 +147,9 @@ def run_training(continue_run):
                                              nlabels=config.nlabels,
                                              loss_type=config.loss_type,
                                              weight_decay=config.weight_decay)  # second output is unregularised loss
-              
-        
+
         # record how Total loss and weight decay change over time
-        tf.summary.scalar('loss', loss)  
+        tf.summary.scalar('loss', loss)
         tf.summary.scalar('weights_norm_term', weights_norm)
 
         # Add to the Graph the Ops that calculate and apply gradients.
@@ -225,6 +223,9 @@ def run_training(continue_run):
         no_improvement_counter_loss = 0
         no_improvement_counter_dice = 0
 
+        no_improvement_counter_dice_val = 0
+        no_improvement_counter_loss_val = 0
+
         last_train = np.inf
         last_dice = 0
 
@@ -236,7 +237,7 @@ def run_training(continue_run):
         train_dice_history = []
         val_dice_history = []
         lr_history = []
-        
+
         for epoch in range(config.max_epochs):
 
             logging.info('EPOCH %d' % epoch)
@@ -264,26 +265,25 @@ def run_training(continue_run):
                     training_pl: True
                 }
 
-
                 _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
                 duration = time.time() - start_time
-                
+
                 # Write the summaries and print an overview fairly often.
                 if step % 20 == 0:
                     # Print status to stdout.
-                    logging.info('Step %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration))
+                    #logging.info('Step %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration))
                     print_txt(log_dir, ['\nStep %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration)])
                     # Update the events file.
 
                     summary_str = sess.run(summary, feed_dict=feed_dict)
                     summary_writer.add_summary(summary_str, step)
                     summary_writer.flush()
-                
+
                 step += 1
-             
+
             # end epoch
-            
+
             logging.info('Training Data Eval:')
             print_txt(log_dir, ['\nTraining Data Eval:'])
             [train_loss, train_dice] = do_eval(sess,
@@ -304,9 +304,10 @@ def run_training(continue_run):
                 logging.info('Decrease in training loss error!')
                 print_txt(log_dir, ['\nDecrease in training loss error!'])
             else:
-                no_improvement_counter_loss = no_improvement_counter_loss+1
+                no_improvement_counter_loss = no_improvement_counter_loss + 1
                 logging.info('No improvment in training loss error for %d epoches' % no_improvement_counter_loss)
-                print_txt(log_dir, ['\nNo improvment in training loss error for %d epoches' % no_improvement_counter_loss])
+                print_txt(log_dir,
+                          ['\nNo improvment in training loss error for %d epoches' % no_improvement_counter_loss])
             last_train = train_loss
 
             if train_dice > last_dice:  # best_train found:
@@ -314,11 +315,12 @@ def run_training(continue_run):
                 logging.info('Decrease in training dice error!')
                 print_txt(log_dir, ['\nDecrease in training dice error!'])
             else:
-                no_improvement_counter_dice = no_improvement_counter_dice+1
+                no_improvement_counter_dice = no_improvement_counter_dice + 1
                 logging.info('No improvment in training dice error for %d epoches' % no_improvement_counter_dice)
-                print_txt(log_dir, ['\nNo improvment in training dice error for %d epoches' % no_improvement_counter_dice])
+                print_txt(log_dir,
+                          ['\nNo improvment in training dice error for %d epoches' % no_improvement_counter_dice])
             last_dice = train_dice
-                
+
             # Save a checkpoint and evaluate the model periodically.
             checkpoint_file = os.path.join(log_dir, 'model.ckpt')
             filelist = glob.glob(os.path.join(log_dir, 'model.ckpt*'))
@@ -344,37 +346,49 @@ def run_training(continue_run):
                 summary_writer.add_summary(val_summary_msg, step)
 
                 if val_dice > best_dice:
+                    no_improvement_counter_dice_val = 0
                     best_dice = val_dice
                     best_file = os.path.join(log_dir, 'model_best_dice.ckpt')
                     filelist = glob.glob(os.path.join(log_dir, 'model_best_dice*'))
                     for file in filelist:
                         os.remove(file)
                     saver_best_dice.save(sess, best_file, global_step=step)
-                    logging.info('Found new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice)
-                    print_txt(log_dir, ['\nFound new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice])
+                    logging.info(
+                        'Found new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice)
+                    print_txt(log_dir, [
+                        '\nFound new best dice on validation set! - %f -  Saving model_best_dice.ckpt' % val_dice])
+                else:
+                    no_improvement_counter_dice_val += 1
+                    logging.info('No improvment in validation dice error for %d epoches' % no_improvement_counter_dice_val)
 
                 if val_loss < best_val:
+                    no_improvement_counter_loss_val = 0
                     best_val = val_loss
                     best_file = os.path.join(log_dir, 'model_best_loss.ckpt')
                     filelist = glob.glob(os.path.join(log_dir, 'model_best_loss*'))
                     for file in filelist:
                         os.remove(file)
                     saver_best_loss.save(sess, best_file, global_step=step)
-                    logging.info('Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
-                    print_txt(log_dir, ['\nFound new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss])
-            
-            curr_lr = math.exp(-0.009*epoch) * config.learning_rate
+                    logging.info(
+                        'Found new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss)
+                    print_txt(log_dir, [
+                        '\nFound new best loss on validation set! - %f -  Saving model_best_loss.ckpt' % val_loss])
+                else:
+                    no_improvement_counter_loss_val += 1
+                    logging.info('No improvment in validation loss error for %d epoches' % no_improvement_counter_loss_val)
+
+            curr_lr = math.exp(-0.01 * epoch) * config.learning_rate
             logging.info('Learning rate change to: %f' % curr_lr)
             print_txt(log_dir, ['\nLearning rate change to: %f' % curr_lr])
             lr_history.append(curr_lr)
-   
+
             train_loss_history.append(train_loss)
             train_dice_history.append(train_dice)
             if not train_on_all_data:
                 val_loss_history.append(val_loss)
                 val_dice_history.append(val_dice)
-                
-            #plot history (loss, dice, lr)
+
+            # plot history (loss, dice, lr)
             if not train_on_all_data:
                 if epoch % 10 == 0:
                     plt.figure()
@@ -409,21 +423,21 @@ def run_training(continue_run):
                     plt.legend()
                     plt.xlabel('epoch')
                     plt.ylabel('loss')
-                    plt.savefig(os.path.join(log_dir,'loss.png'))
+                    plt.savefig(os.path.join(log_dir, 'loss.png'))
                     plt.figure()
                     plt.plot(train_dice_history, label='train_dice')
                     plt.title('model dice')
                     plt.legend()
                     plt.xlabel('epoch')
                     plt.ylabel('dice')
-                    plt.savefig(os.path.join(log_dir,'dice.png'))
+                    plt.savefig(os.path.join(log_dir, 'dice.png'))
                     plt.figure()
                     plt.plot(lr_history)
                     plt.title('model learning rate')
                     plt.xlabel('epoch')
                     plt.ylabel('learning rate')
-                    plt.savefig(os.path.join(log_dir,'learning_rate.png'))
-        #end
+                    plt.savefig(os.path.join(log_dir, 'learning_rate.png'))
+        # end
         sess.close()
 
 
@@ -435,7 +449,6 @@ def do_eval(sess,
             images,
             labels,
             batch_size):
-
     '''
     Function for running the evaluations every X iterations on the training and validation sets. 
     :param sess: The current tf session 
@@ -452,18 +465,19 @@ def do_eval(sess,
     dice_ii = 0
     num_batches = 0
 
-    for batch in BackgroundGenerator(iterate_minibatches(images, labels, batch_size=batch_size, augment_batch=False)):  # No aug in evaluation
-    # you can wrap the iterate_minibatches function in the BackgroundGenerator class for speed improvements
-    # but at the risk of not catching exceptions
+    for batch in BackgroundGenerator(
+            iterate_minibatches(images, labels, batch_size=batch_size, augment_batch=False)):  # No aug in evaluation
+        # you can wrap the iterate_minibatches function in the BackgroundGenerator class for speed improvements
+        # but at the risk of not catching exceptions
 
         x, y = batch
 
         if y.shape[0] < batch_size:
             continue
 
-        feed_dict = { images_placeholder: x,
-                      labels_placeholder: y,
-                      training_time_placeholder: False}
+        feed_dict = {images_placeholder: x,
+                     labels_placeholder: y,
+                     training_time_placeholder: False}
 
         closs, cdice = sess.run(eval_loss, feed_dict=feed_dict)
         loss_ii += closs
@@ -475,7 +489,7 @@ def do_eval(sess,
 
     logging.info('  Average loss: %0.04f, average dice: %0.04f' % (avg_loss, avg_dice))
     print_txt(log_dir, ['\n  Average loss: %0.04f, average dice: %0.04f' % (avg_loss, avg_dice)])
-        
+
     return avg_loss, avg_dice
 
 
@@ -492,35 +506,34 @@ def iterate_minibatches(images, labels, batch_size, augment_batch=False):
 
     n_images = images.shape[0]
 
-    for b_i in range(0,n_images,batch_size):
+    for b_i in range(0, n_images, batch_size):
 
         if b_i + batch_size > n_images:
             continue
 
         # HDF5 requires indices to be in increasing order
-        batch_indices = np.sort(random_indices[b_i:b_i+batch_size])
+        batch_indices = np.sort(random_indices[b_i:b_i + batch_size])
 
         X = images[batch_indices, ...]
         y = labels[batch_indices, ...]
-        #Xid = id_img[batch_indices]
+        # Xid = id_img[batch_indices]
 
         image_tensor_shape = [X.shape[0]] + list(config.image_size) + [1]
         X = np.reshape(X, image_tensor_shape)
-        
+
         if augment_batch:
             X, y = aug.augmentation_function(X, y)
 
         yield X, y
 
-        
+
 def print_txt(output_dir, stringa):
     out_file = os.path.join(output_dir, 'summary_report.txt')
     with open(out_file, "a") as text_file:
         text_file.writelines(stringa)
 
-        
-def main():
 
+def main():
     continue_run = True
     if not tf.io.gfile.exists(log_dir):
         tf.io.gfile.makedirs(log_dir)
@@ -537,5 +550,5 @@ def main():
     run_training(continue_run)
 
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     main()
