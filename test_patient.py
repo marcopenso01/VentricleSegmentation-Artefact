@@ -45,6 +45,7 @@ print("TensorFlow version: ", tf.__version__)
 assert version.parse(tf.__version__).release[0] >= 2, \
     "this notebook requires Tensorflow 2.0 or above"
 
+tf.compat.v1.disable_eager_execution()
 
 def makefolder(folder):
     '''
@@ -59,6 +60,7 @@ def makefolder(folder):
 
 
 def score_data(input_path, output_folder, model_path, config, do_postprocessing=False, dice=True):
+    print(input_path)
     nx, ny = config.image_size[:2]
     batch_size = 1
     num_channels = config.nlabels
@@ -68,10 +70,10 @@ def score_data(input_path, output_folder, model_path, config, do_postprocessing=
     images_pl = tf.compat.v1.placeholder(tf.float32, shape=image_tensor_shape, name='images')
 
     mask_pl, softmax_pl = model.predict(images_pl, config)
-    saver = tf.train.Saver()
-    init = tf.global_variables_initializer()
+    saver = tf.compat.v1.train.Saver()
+    init = tf.compat.v1.global_variables_initializer()
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
 
         sess.run(init)
 
@@ -83,8 +85,11 @@ def score_data(input_path, output_folder, model_path, config, do_postprocessing=
             data_file_name = 'pred_on_loss.hdf5'
 
         checkpoint_path = utils.get_latest_model_checkpoint_path(model_path, nn)
+
         saver.restore(sess, checkpoint_path)
+
         init_iteration = int(checkpoint_path.split('/')[-1].split('-')[-1])
+
         total_time = 0
         total_volumes = 0
 
@@ -103,7 +108,11 @@ def score_data(input_path, output_folder, model_path, config, do_postprocessing=
         for paz in os.listdir(input_path):
 
             start_time = time.time()
+
+            logging.info(' --------------------------------------------')
             logging.info('------- Reading %s' % paz)
+            logging.info(' --------------------------------------------')
+
             data = h5py.File(os.path.join(input_path, paz, 'pre_proc', 'artefacts.hdf5'), 'r')
 
             n_file = len(data['img_raw'][()])
@@ -123,9 +132,12 @@ def score_data(input_path, output_folder, model_path, config, do_postprocessing=
                 if config.normalize:
                     img = image_utils.normalize_image(img)
 
+                img = np.float32(img)
+                x = image_utils.reshape_2Dimage_to_tensor(img)
+
                 # GET PREDICTION
                 feed_dict = {
-                    images_pl: img,
+                    images_pl: x,
                 }
 
                 mask_out, logits_out = sess.run([mask_pl, softmax_pl], feed_dict=feed_dict)
@@ -182,7 +194,7 @@ if __name__ == '__main__':
     logging.info(model_path)
 
     logging.warning('EVALUATING ON TEST SET')
-    input_path = config.test_data_root
+    input_path = os.path.join(config.test_data_root, 'test')
     output_path = os.path.join(model_path, 'predictions')
 
     score_data(input_path,
