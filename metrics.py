@@ -457,15 +457,24 @@ def print_stats(df, eval_dir, circle=False):
 
         for struc_name in ['Myo']:
             lv = df.loc[df['struc'] == struc_name]
-            MYmass = np.array(lv['vol'])
-            MYmass_gt = np.array(lv['vol_gt'])
-            MY_corr = stats.pearsonr(MYmass, MYmass_gt)
+            MYmassED = np.array(lv.loc[lv['phase'] == 'ED']['vol'])
+            MYmassES = np.array(lv.loc[lv['phase'] == 'ES']['vol'])
+            MYmassED_gt = np.array(lv.loc[lv['phase'] == 'ED']['vol_gt'])
+            MYmassES_gt = np.array(lv.loc[lv['phase'] == 'ES']['vol_gt'])
+            
+            MYED_corr = stats.pearsonr(MYmassED, MYmassED_gt)
+            MYES_corr = stats.pearsonr(MYmassES, MYmassES_gt)
 
-            text_file.write('MYmass corr: {}\n\n'.format(MY_corr[0] * 100))
+            text_file.write('MYmass ED corr: {}\n\n'.format(MYED_corr[0] * 100))
+            text_file.write('MYmass ES corr: {}\n\n'.format(MYES_corr[0] * 100))
 
-            bias_MYmass = np.mean(MYmass_gt - MYmass)
-            LOA_MYmass = 1.96*np.std(MYmass_gt - MYmass)
-            text_file.write('MYmass bias: {}, LOA: {}\n\n'.format(bias_MYmass, LOA_MYmass))
+            bias_MYmassED = np.mean(MYmassED_gt - MYmassED)
+            LOA_MYmassED = 1.96*np.std(MYmassED_gt - MYmassED)
+            text_file.write('MYmass ED bias: {}, LOA: {}\n\n'.format(bias_MYmassED, LOA_MYmassED))
+            
+            bias_MYmassES = np.mean(MYmassES_gt - MYmassES)
+            LOA_MYmassES = 1.96*np.std(MYmassES_gt - MYmassES)
+            text_file.write('MYmass ES bias: {}, LOA: {}\n\n'.format(bias_MYmassES, LOA_MYmassES))
 
 
 def boxplot_metrics(df, eval_dir, circle=False):
