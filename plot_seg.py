@@ -4,12 +4,25 @@ import numpy as np
 import h5py
 import cv2
 
-# firt method
 data = h5py.File('pred_on_dice.hdf5', "r")
-img = data['img_raw'][0]
-img_o = cv2.normalize(src=img, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-io.imshow(color.label2rgb(data['mask'][0],img_o,colors=[(255,0,0),(0,255,0),(255,255,0)],alpha=0.0008, bg_label=0, bg_color=None))
-plt.show()
+
+# firt method
+for i in range(len(data['img_raw'])):
+    print(data['paz'][i], data['phase'][i])
+    img_raw = cv2.normalize(src=data['img_raw'][i], dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    mask = data['mask'][i].astype(np.uint8)
+    pred = data['pred'][i].astype(np.uint8)
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121)
+    ax1.set_axis_off()
+    ax1.imshow(color.label2rgb(mask,img_raw,colors=[(255,0,0),(0,255,0),(255,255,0)],alpha=0.0008, bg_label=0, bg_color=None))
+    ax2 = fig.add_subplot(122)
+    ax2.set_axis_off()
+    ax2.imshow(color.label2rgb(pred,img_raw,colors=[(255,0,0),(0,255,0),(255,255,0)],alpha=0.0008, bg_label=0, bg_color=None))
+    ax1.title.set_text('groud truth')
+    ax2.title.set_text('pred')
+    plt.show()
 
 
 # second method
