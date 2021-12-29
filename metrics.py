@@ -438,6 +438,18 @@ def print_stats(df, eval_dir, circle=False):
             bias_ESV = np.mean(ES_vol_gt - ES_vol)
             bias_SV = np.mean(SV_gt - SV_pred)
             bias_EF = np.mean(EF_gt - EF_pred)
+            
+            # calcolo standard error della differenza delle medie
+            n = len(ED_vol_gt)
+            se_bias_EDV = np.sqrt((np.std(ED_vol_gt - ED_vol) ** 2) / n)
+            se_bias_ESV = np.sqrt((np.std(ES_vol_gt - ES_vol) ** 2) / n)
+            se_bias_SV = np.sqrt((np.std(SV_gt - SV_pred) ** 2) / n)
+            se_bias_EF = np.sqrt((np.std(EF_gt - EF_pred) ** 2) / n)
+            
+            confidence_EDV = stats.t.ppf(1-0.025, n-1) * se_bias_EDV
+            confidence_ESV = stats.t.ppf(1-0.025, n-1) * se_bias_ESV
+            confidence_SV = stats.t.ppf(1-0.025, n-1) * se_bias_SV
+            confidence_EF = stats.t.ppf(1-0.025, n-1) * se_bias_EF
 
             LOA_EDV = 1.96*np.std(ED_vol_gt - ED_vol)
             LOA_ESV = 1.96*np.std(ES_vol_gt - ES_vol)
@@ -449,11 +461,15 @@ def print_stats(df, eval_dir, circle=False):
             _, pvalueSV = stats.ttest_1samp((SV_gt - SV_pred), popmean=np.mean(SV_gt - SV_pred))
             _, pvalueEF = stats.ttest_1samp((EF_gt - EF_pred), popmean=np.mean(EF_gt - EF_pred))
 
-            text_file.write('{}, EDV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EDV, LOA_EDV, pvalueED))
-            text_file.write('{}, ESV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_ESV, LOA_ESV, pvalueES))
-            text_file.write('{}, SV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_SV, LOA_SV, pvalueSV))
-            text_file.write('{}, EF bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EF, LOA_EF, pvalueEF))
-
+            text_file.write('{}, EDV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EDV, bias_EDV-confidence_EDV, bias_EDV+confidence_EDV))
+            text_file.write('{}, ESV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_ESV, bias_ESV-confidence_ESV, bias_ESV+confidence_ESV))
+            text_file.write('{}, SV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_SV, bias_SV-confidence_SV, bias_SV+confidence_SV))
+            text_file.write('{}, EF bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EF, bias_EF-confidence_EF, bias_EF+confidence_EF))
+            
+            text_file.write('{}, EDV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_EDV, LOA_EDV, pvalueED))
+            text_file.write('{}, ESV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_ESV, LOA_ESV, pvalueES))
+            text_file.write('{}, SV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_SV, LOA_SV, pvalueSV))
+            text_file.write('{}, EF bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_EF, LOA_EF, pvalueEF))
 
         for struc_name in ['Myo']:
             lv = df.loc[df['struc'] == struc_name]
@@ -470,11 +486,19 @@ def print_stats(df, eval_dir, circle=False):
 
             bias_MYmassED = np.mean(MYmassED_gt - MYmassED)
             LOA_MYmassED = 1.96*np.std(MYmassED_gt - MYmassED)
+            n = len(MYmassED_gt)
+            se_bias_MYoED = np.sqrt((np.std(MYmassED_gt - MYmassED) ** 2) / n)
+            confidence_MYoED = stats.t.ppf(1-0.025, n-1) * se_bias_MYoED
             text_file.write('MYmass ED bias: {}, LOA: {}\n\n'.format(bias_MYmassED, LOA_MYmassED))
+            text_file.write('MYmass ED bias: {}, Confidence: {} to {}\n\n'.format(bias_MYmassED, bias_MYmassED-confidence_MYoED, bias_MYmassED+confidence_MYoED))
             
             bias_MYmassES = np.mean(MYmassES_gt - MYmassES)
             LOA_MYmassES = 1.96*np.std(MYmassES_gt - MYmassES)
+            n = len(MYmassES_gt)
+            se_bias_MYoES = np.sqrt((np.std(MYmassES_gt - MYmassES) ** 2) / n)
+            confidence_MYoES = stats.t.ppf(1-0.025, n-1) * se_bias_MYoES
             text_file.write('MYmass ES bias: {}, LOA: {}\n\n'.format(bias_MYmassES, LOA_MYmassES))
+            text_file.write('MYmass ES bias: {}, Confidence: {} to {}\n\n'.format(bias_MYmassES, bias_MYmassES-confidence_MYoES, bias_MYmassES+confidence_MYoES))
 
 
 def boxplot_metrics(df, eval_dir, circle=False):
