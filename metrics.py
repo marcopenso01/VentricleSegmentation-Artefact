@@ -245,8 +245,8 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     elif slice_cir.sum() != 0 and slice_gt.sum() != 0:
                         temp_cir_dice += bm.dc(cir_binary, gt_binary)
                     count += 1
-                dices_list.append(temp_dice/count)
-                dices_cir_list.append(temp_cir_dice/count)
+                dices_list.append(temp_dice / count)
+                dices_cir_list.append(temp_cir_dice / count)
 
                 # Hausdorff distance
                 hd_max = 0
@@ -275,7 +275,7 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     if hd_cir_max < hd_cir_value:
                         hd_cir_max = hd_cir_value
 
-                #recall
+                # recall
                 temp_rec = 0
                 temp_cir_rec = 0
                 count = 0
@@ -301,7 +301,7 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                 sens_list.append(temp_rec / count)
                 sens_cir_list.append(temp_cir_rec / count)
 
-                #precision
+                # precision
                 temp_prec = 0
                 temp_cir_prec = 0
                 count = 0
@@ -421,7 +421,7 @@ def print_stats(df, eval_dir, circle=False):
             SV_gt = ED_vol_gt - ES_vol_gt
             EF_gt = SV_gt / ED_vol_gt
 
-            #correlation
+            # correlation
             # EF_corr, _ = stats.pearsonr(EF_pred, EF_gt)
             # EF_corr = (np.cov(EF_pred, EF_gt)[1, 0] / (np.std(EF_pred) * np.std(EF_gt)))
             EDV_corr = stats.pearsonr(ED_vol, ED_vol_gt)
@@ -433,43 +433,49 @@ def print_stats(df, eval_dir, circle=False):
             text_file.write('{}, SV corr: {}\n\n'.format(struc_name, SV_corr[0] * 100))
             text_file.write('{}, EF corr: {}\n\n'.format(struc_name, EF_corr[0] * 100))
 
-            #Bland-Altman
+            # Bland-Altman
             bias_EDV = np.mean(ED_vol_gt - ED_vol)
             bias_ESV = np.mean(ES_vol_gt - ES_vol)
             bias_SV = np.mean(SV_gt - SV_pred)
             bias_EF = np.mean(EF_gt - EF_pred)
-            
+
             # calcolo standard error della differenza delle medie
             n = len(ED_vol_gt)
             se_bias_EDV = np.sqrt((np.std(ED_vol_gt - ED_vol) ** 2) / n)
             se_bias_ESV = np.sqrt((np.std(ES_vol_gt - ES_vol) ** 2) / n)
             se_bias_SV = np.sqrt((np.std(SV_gt - SV_pred) ** 2) / n)
             se_bias_EF = np.sqrt((np.std(EF_gt - EF_pred) ** 2) / n)
-            
-            confidence_EDV = stats.t.ppf(1-0.025, n-1) * se_bias_EDV
-            confidence_ESV = stats.t.ppf(1-0.025, n-1) * se_bias_ESV
-            confidence_SV = stats.t.ppf(1-0.025, n-1) * se_bias_SV
-            confidence_EF = stats.t.ppf(1-0.025, n-1) * se_bias_EF
 
-            LOA_EDV = 1.96*np.std(ED_vol_gt - ED_vol)
-            LOA_ESV = 1.96*np.std(ES_vol_gt - ES_vol)
-            LOA_SV = 1.96*np.std(SV_gt - SV_pred)
-            LOA_EF = 1.96*np.std(EF_gt - EF_pred)
+            confidence_EDV = stats.t.ppf(1 - 0.025, n - 1) * se_bias_EDV
+            confidence_ESV = stats.t.ppf(1 - 0.025, n - 1) * se_bias_ESV
+            confidence_SV = stats.t.ppf(1 - 0.025, n - 1) * se_bias_SV
+            confidence_EF = stats.t.ppf(1 - 0.025, n - 1) * se_bias_EF
+
+            LOA_EDV = 1.96 * np.std(ED_vol_gt - ED_vol)
+            LOA_ESV = 1.96 * np.std(ES_vol_gt - ES_vol)
+            LOA_SV = 1.96 * np.std(SV_gt - SV_pred)
+            LOA_EF = 1.96 * np.std(EF_gt - EF_pred)
 
             _, pvalueED = stats.ttest_1samp((ED_vol_gt - ED_vol), popmean=np.mean(ED_vol_gt - ED_vol))
             _, pvalueES = stats.ttest_1samp((ES_vol_gt - ES_vol), popmean=np.mean(ES_vol_gt - ES_vol))
             _, pvalueSV = stats.ttest_1samp((SV_gt - SV_pred), popmean=np.mean(SV_gt - SV_pred))
             _, pvalueEF = stats.ttest_1samp((EF_gt - EF_pred), popmean=np.mean(EF_gt - EF_pred))
 
-            text_file.write('{}, EDV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EDV, bias_EDV-confidence_EDV, bias_EDV+confidence_EDV))
-            text_file.write('{}, ESV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_ESV, bias_ESV-confidence_ESV, bias_ESV+confidence_ESV))
-            text_file.write('{}, SV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_SV, bias_SV-confidence_SV, bias_SV+confidence_SV))
-            text_file.write('{}, EF bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EF, bias_EF-confidence_EF, bias_EF+confidence_EF))
-            
-            text_file.write('{}, EDV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_EDV, LOA_EDV, pvalueED))
-            text_file.write('{}, ESV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_ESV, LOA_ESV, pvalueES))
-            text_file.write('{}, SV bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_SV, LOA_SV, pvalueSV))
-            text_file.write('{}, EF bias: {}, Confidence: {} to {}\n\n'.format(struc_name, bias_EF, LOA_EF, pvalueEF))
+            text_file.write(
+                '{}, EDV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EDV, LOA_EDV, pvalueED))
+            text_file.write(
+                '{}, ESV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_ESV, LOA_ESV, pvalueES))
+            text_file.write(
+                '{}, SV bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_SV, LOA_SV, pvalueSV))
+            text_file.write(
+                '{}, EF bias: {}, LOA: {}, pvalue: {}\n\n'.format(struc_name, bias_EF, LOA_EF, pvalueEF))
+
+            text_file.write(
+                '{}, EDV bias: {}, Confidence: {}\n\n'.format(struc_name, bias_EDV, confidence_EDV))
+            text_file.write(
+                '{}, ESV bias: {}, Confidence: {}\n\n'.format(struc_name, bias_ESV, confidence_ESV))
+            text_file.write('{}, SV bias: {}, Confidence: {}\n\n'.format(struc_name, bias_SV, confidence_SV))
+            text_file.write('{}, EF bias: {}, Confidence: {}\n\n'.format(struc_name, bias_EF, confidence_EF))
 
         for struc_name in ['Myo']:
             lv = df.loc[df['struc'] == struc_name]
@@ -477,7 +483,7 @@ def print_stats(df, eval_dir, circle=False):
             MYmassES = np.array(lv.loc[lv['phase'] == 'ES']['vol'])
             MYmassED_gt = np.array(lv.loc[lv['phase'] == 'ED']['vol_gt'])
             MYmassES_gt = np.array(lv.loc[lv['phase'] == 'ES']['vol_gt'])
-            
+
             MYED_corr = stats.pearsonr(MYmassED, MYmassED_gt)
             MYES_corr = stats.pearsonr(MYmassES, MYmassES_gt)
 
@@ -485,20 +491,22 @@ def print_stats(df, eval_dir, circle=False):
             text_file.write('MYmass ES corr: {}\n\n'.format(MYES_corr[0] * 100))
 
             bias_MYmassED = np.mean(MYmassED_gt - MYmassED)
-            LOA_MYmassED = 1.96*np.std(MYmassED_gt - MYmassED)
+            LOA_MYmassED = 1.96 * np.std(MYmassED_gt - MYmassED)
             n = len(MYmassED_gt)
             se_bias_MYoED = np.sqrt((np.std(MYmassED_gt - MYmassED) ** 2) / n)
-            confidence_MYoED = stats.t.ppf(1-0.025, n-1) * se_bias_MYoED
+            confidence_MYoED = stats.t.ppf(1 - 0.025, n - 1) * se_bias_MYoED
             text_file.write('MYmass ED bias: {}, LOA: {}\n\n'.format(bias_MYmassED, LOA_MYmassED))
-            text_file.write('MYmass ED bias: {}, Confidence: {} to {}\n\n'.format(bias_MYmassED, bias_MYmassED-confidence_MYoED, bias_MYmassED+confidence_MYoED))
-            
+            text_file.write(
+                'MYmass ED bias: {}, Confidence: {}\n\n'.format(bias_MYmassED, confidence_MYoED))
+
             bias_MYmassES = np.mean(MYmassES_gt - MYmassES)
-            LOA_MYmassES = 1.96*np.std(MYmassES_gt - MYmassES)
+            LOA_MYmassES = 1.96 * np.std(MYmassES_gt - MYmassES)
             n = len(MYmassES_gt)
             se_bias_MYoES = np.sqrt((np.std(MYmassES_gt - MYmassES) ** 2) / n)
-            confidence_MYoES = stats.t.ppf(1-0.025, n-1) * se_bias_MYoES
+            confidence_MYoES = stats.t.ppf(1 - 0.025, n - 1) * se_bias_MYoES
             text_file.write('MYmass ES bias: {}, LOA: {}\n\n'.format(bias_MYmassES, LOA_MYmassES))
-            text_file.write('MYmass ES bias: {}, Confidence: {} to {}\n\n'.format(bias_MYmassES, bias_MYmassES-confidence_MYoES, bias_MYmassES+confidence_MYoES))
+            text_file.write(
+                'MYmass ES bias: {}, Confidence: {}\n\n'.format(bias_MYmassES, confidence_MYoES))
 
 
 def boxplot_metrics(df, eval_dir, circle=False):
@@ -506,7 +514,7 @@ def boxplot_metrics(df, eval_dir, circle=False):
     Create summary boxplots of all geometric measures.
     :param df:
     :param eval_dir:
-    :param circle: 
+    :param circle:
     :return:
     """
     if not circle:
