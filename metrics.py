@@ -11,6 +11,8 @@ import seaborn as sns
 import binary_metric as bm
 import configuration as config
 import scipy.stats as stats
+from skimage import measure
+from scipy.spatial.distance import directed_hausdorff
 import utils
 
 logging.basicConfig(
@@ -32,6 +34,29 @@ def natural_order(sord):
     if isinstance(sord, tuple):
         sord = sord[0]
     return [conv_int(c) for c in re.split(r'(\d+)', sord)]
+
+
+def keep_largest_connected_components(mask):
+    '''
+    Keeps only the largest connected components of each label for a segmentation mask.
+    '''
+    img = mask.copy()
+    if img.sum() == 0:
+        return mask
+    else:
+        out_img = np.zeros(mask.shape, dtype=np.uint8)
+        struc_id = img.max()
+        temp_img = np.zeros(img.shape, dtype=np.uint8)
+        binary_img = img.copy()
+        binary_img[binary_img != 0] = 1
+        blobs = measure.label(binary_img, connectivity=1)  # find regions
+        props = measure.regionprops(blobs)
+        area = [ele.area for ele in props]  # area of each region
+        largest_blob_ind = np.argmax(area)
+        largest_blob_label = props[largest_blob_ind].label
+        temp_img[blobs == largest_blob_label] = 255
+        out_img[temp_img != 0] = struc_id
+        return out_img
 
 
 def print_latex_tables(df, eval_dir, circle=False):
@@ -231,6 +256,10 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     slice_gt = np.squeeze(gt_binary[:, :, zz])
                     slice_cir = np.squeeze(cir_binary[:, :, zz])
 
+                    slice_pred = keep_largest_connected_components(slice_pred)
+                    slice_gt = keep_largest_connected_components(slice_gt)
+                    slice_cir = keep_largest_connected_components(slice_cir)
+
                     if slice_gt.sum() == 0 and slice_pred.sum() == 0:
                         temp_dice += 1
                     elif slice_pred.sum() == 0 and slice_gt.sum() > 0:
@@ -256,21 +285,28 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     slice_gt = np.squeeze(gt_binary[:, :, zz])
                     slice_cir = np.squeeze(cir_binary[:, :, zz])
 
+                    slice_pred = keep_largest_connected_components(slice_pred)
+                    slice_gt = keep_largest_connected_components(slice_gt)
+                    slice_cir = keep_largest_connected_components(slice_cir)
+
                     if slice_gt.sum() == 0 and slice_pred.sum() == 0:
                         hd_value = 0
                     elif slice_pred.sum() == 0 and slice_gt.sum() > 0:
                         hd_value = 1
                     elif slice_pred.sum() != 0 and slice_gt.sum() != 0:
-                        hd_value = bm.hd(slice_gt, slice_pred, (0.6467, 0.6467), connectivity=2)
+                        hd_value = bm.hd95(slice_gt, slice_pred, (0.6467, 0.6467), connectivity=2)
+                        #hd_value95 = bm.hd95(slice_gt, slice_pred, (0.6467, 0.6467), connectivity=2)
+                        #hd_value = max(directed_hausdorff(slice_gt, slice_pred)[0], directed_hausdorff(slice_pred, slice_gt)[0])
 
                     if slice_gt.sum() == 0 and slice_cir.sum() == 0:
                         hd_cir_value = 0
                     elif slice_cir.sum() == 0 and slice_gt.sum() > 0:
                         hd_cir_value = 1
                     elif slice_cir.sum() != 0 and slice_gt.sum() != 0:
-                        hd_cir_value = bm.hd(slice_gt, slice_cir, (0.6467, 0.6467), connectivity=2)
+                        hd_cir_value = bm.hd95(slice_gt, slice_cir, (0.6467, 0.6467), connectivity=2)
+                        #hd_cir_value = max(directed_hausdorff(slice_gt, slice_cir)[0], directed_hausdorff(slice_cir, slice_gt)[0])
 
-                    if hd_max < hd_value and hd_value < 20:
+                    if hd_max < hd_value and hd_value<20:
                         hd_max = hd_value
                     if hd_cir_max < hd_cir_value:
                         hd_cir_max = hd_cir_value
@@ -283,6 +319,10 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     slice_pred = np.squeeze(pred_binary[:, :, zz])
                     slice_gt = np.squeeze(gt_binary[:, :, zz])
                     slice_cir = np.squeeze(cir_binary[:, :, zz])
+
+                    slice_pred = keep_largest_connected_components(slice_pred)
+                    slice_gt = keep_largest_connected_components(slice_gt)
+                    slice_cir = keep_largest_connected_components(slice_cir)
 
                     if slice_gt.sum() == 0 and slice_pred.sum() == 0:
                         temp_rec += 1
@@ -309,6 +349,10 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     slice_pred = np.squeeze(pred_binary[:, :, zz])
                     slice_gt = np.squeeze(gt_binary[:, :, zz])
                     slice_cir = np.squeeze(cir_binary[:, :, zz])
+
+                    slice_pred = keep_largest_connected_components(slice_pred)
+                    slice_gt = keep_largest_connected_components(slice_gt)
+                    slice_cir = keep_largest_connected_components(slice_cir)
 
                     if slice_gt.sum() == 0 and slice_pred.sum() == 0:
                         temp_prec += 1
