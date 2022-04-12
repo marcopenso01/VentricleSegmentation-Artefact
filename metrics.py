@@ -265,14 +265,14 @@ def compute_metrics_on_directories_raw(input_fold, output_fold, dice=True):
                     elif slice_pred.sum() == 0 and slice_gt.sum() > 0:
                         temp_dice += 0
                     elif slice_pred.sum() != 0 and slice_gt.sum() != 0:
-                        temp_dice += bm.dc(pred_binary, gt_binary)
+                        temp_dice += bm.dc(slice_pred, slice_gt)
 
                     if slice_gt.sum() == 0 and slice_cir.sum() == 0:
                         temp_cir_dice += 1
                     elif slice_cir.sum() == 0 and slice_gt.sum() > 0:
                         temp_cir_dice += 0
                     elif slice_cir.sum() != 0 and slice_gt.sum() != 0:
-                        temp_cir_dice += bm.dc(cir_binary, gt_binary)
+                        temp_cir_dice += bm.dc(slice_cir, slice_gt)
                     count += 1
                 dices_list.append(temp_dice / count)
                 dices_cir_list.append(temp_cir_dice / count)
